@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schema_version", "opportunity", "matches", "swot", "recruiter_concerns", "preparation_strategy"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "opportunity": {"type": "string"},
+    "matches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["requirement_id", "status", "fact_ids", "analysis"],
+        "properties": {
+          "requirement_id": {"type": "string", "pattern": "^req-"},
+          "status": {"enum": ["match", "partial", "gap", "unknown"]},
+          "fact_ids": {"type": "array", "items": {"type": "string", "pattern": "^fact-"}, "uniqueItems": true},
+          "analysis": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "swot": {
+      "type": "object",
+      "required": ["strengths", "weaknesses", "opportunities", "threats"],
+      "properties": {
+        "strengths": {"$ref": "#/$defs/analysis_items"},
+        "weaknesses": {"$ref": "#/$defs/analysis_items"},
+        "opportunities": {"$ref": "#/$defs/analysis_items"},
+        "threats": {"$ref": "#/$defs/analysis_items"}
+      },
+      "additionalProperties": false
+    },
+    "recruiter_concerns": {"$ref": "#/$defs/analysis_items"},
+    "preparation_strategy": {"$ref": "#/$defs/analysis_items"}
+  },
+  "$defs": {
+    "analysis_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["text", "fact_ids", "requirement_ids"],
+        "properties": {
+          "text": {"type": "string", "minLength": 1},
+          "fact_ids": {"type": "array", "items": {"type": "string", "pattern": "^fact-"}, "uniqueItems": true},
+          "requirement_ids": {"type": "array", "items": {"type": "string", "pattern": "^req-"}, "uniqueItems": true}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

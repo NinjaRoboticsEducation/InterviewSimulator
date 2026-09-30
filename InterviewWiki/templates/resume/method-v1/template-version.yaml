@@ -1,0 +1,17 @@
+id: method-v1
+version: 1.2.0
+reference: templates/Method
+schema_version: 2
+required_locales: [en, ja]
+desktop_width_px: 1120
+sidebar_width_px: 292
+print_size: A4
+profile_photo: PersonalWiki/raw/media/Profile.(png|jpg|jpeg)
+professional_experience_contract: 2-3-distinct-grounded-responsibilities-and-achievements
+self_pr_contract: practical-career-direction-with-concrete-case-evidence
+ats_content_contract: standard-headings-selectable-text-grounded-keywords
+earlier_career_coverage: required
+print_pagination: expertise-page-2-self-pr-page-3
+remote_assets: forbidden
+layout_tokens_configurable: false
+palette_tokens_configurable: true

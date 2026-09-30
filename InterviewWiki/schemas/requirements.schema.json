@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schema_version", "opportunity", "requirements"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "opportunity": {"type": "string", "pattern": "^[a-z0-9-]+/[a-z0-9-]+$"},
+    "requirements": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["requirement_id", "category", "priority", "statement", "evidence"],
+        "properties": {
+          "requirement_id": {"type": "string", "pattern": "^req-[a-z0-9][a-z0-9-]{2,79}$"},
+          "category": {"enum": ["responsibility", "required", "preferred", "outcome", "culture", "hiring-process", "location-eligibility", "working-arrangement", "hours", "travel", "compensation", "benefits", "assessment", "compliance", "privacy-consent", "application-accuracy", "other"]},
+          "priority": {"enum": ["critical", "high", "medium", "low"]},
+          "statement": {"type": "string", "minLength": 1},
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["source_id"],
+              "properties": {
+                "source_id": {"type": "string", "pattern": "^(opp-|research-)"},
+                "quote": {"type": "string"}
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "source_coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_id", "section", "disposition"],
+        "properties": {
+          "source_id": {"type": "string", "pattern": "^(opp-|research-)"},
+          "section": {"type": "string", "minLength": 1},
+          "disposition": {"enum": ["requirements-extracted", "context-only", "duplicate", "not-applicable"]},
+          "requirement_ids": {"type": "array", "items": {"type": "string", "pattern": "^req-"}, "uniqueItems": true},
+          "notes": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

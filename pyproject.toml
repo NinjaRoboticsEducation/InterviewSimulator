@@ -1,42 +1,47 @@
 [project]
-name = "local-llm-wiki"
-version = "0.2.0"
-description = "A local-first, agent-maintained, OKF v0.2 knowledge base template"
-readme = "README.md"
-requires-python = ">=3.11"
-license = "MIT"
+name = "interview-simulator"
+version = "0.1.0"
+description = "Private, evidence-grounded local interview practice"
+requires-python = ">=3.11,<3.14"
 dependencies = [
-  "click>=8.1,<9",
-  "jsonschema>=4.23,<5",
-  "pillow>=11.0,<13",
-  "pyyaml>=6.0,<7",
-  "rich>=13.9,<15",
+  "google-adk[db]==2.10.0",
+  "sqlalchemy[asyncio]>=2,<3",
+  "litellm>=1.0,<2",
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.30,<1",
+  "pydantic>=2.8,<3",
+  "python-multipart>=0.0.9,<1",
+  "opencc-python-reimplemented>=0.1.7,<1",
+  "interviewwiki>=0.2.1",
+  "httpx>=0.27,<1",
+  "openai>=2,<3",
+  "filelock>=3,<5",
 ]
 
-[project.optional-dependencies]
-pdf = ["pypdf>=5.0,<7"]
-
 [project.scripts]
-llmwiki = "llmwiki.cli:main"
+interview-simulator = "interview_simulator.cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/llmwiki"]
+packages = ["src/interview_simulator"]
 
-[tool.pytest.ini_options]
-addopts = "-ra --strict-markers"
-testpaths = ["tests"]
-
-[tool.coverage.run]
-source = ["llmwiki"]
-branch = true
-
-[tool.uv]
-default-groups = ["dev"]
-required-version = ">=0.11.0"
+[tool.uv.sources]
+interviewwiki = {path = "InterviewWiki", editable = true}
 
 [dependency-groups]
-dev = ["pytest>=8.3,<9", "pytest-cov>=6.0,<8"]
+dev = ["pytest>=9.0.3,<10", "ruff>=0.12,<1", "mypy>=1.15,<2", "httpx>=0.27,<1"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = ["model: requires a live local language model", "hardware: requires physical microphone or voice services"]
+
+[tool.ruff]
+line-length = 110
+
+[[tool.mypy.overrides]]
+module = ["interviewwiki.*", "opencc.*"]
+ignore_missing_imports = true

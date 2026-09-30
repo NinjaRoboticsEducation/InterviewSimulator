@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schema_version", "opportunity", "sources"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "opportunity": {"type": "string", "pattern": "^[a-z0-9-]+/[a-z0-9-]+$"},
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_id", "url", "title", "publisher", "retrieved_at", "source_tier", "snapshot", "content_hash", "excerpt", "claim_type", "query_classification"],
+        "properties": {
+          "source_id": {"type": "string", "pattern": "^research-[a-z0-9][a-z0-9-]{2,79}$"},
+          "url": {"type": "string", "pattern": "^https?://"},
+          "title": {"type": "string", "minLength": 1},
+          "publisher": {"type": "string", "minLength": 1},
+          "retrieved_at": {"type": "string", "minLength": 1},
+          "published_at": {"type": "string"},
+          "source_tier": {"enum": ["official", "primary", "reputable-secondary", "anecdotal"]},
+          "snapshot": {"type": "string", "pattern": "^sources/"},
+          "content_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+          "excerpt": {"type": "string"},
+          "claim_type": {"enum": ["direct", "analyst-inference"]},
+          "query_classification": {"const": "company-role-only"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

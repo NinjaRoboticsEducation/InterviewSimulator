@@ -1,0 +1,1 @@
+Generate a complete package for the opportunity reference supplied by the user. Read `.agents/skills/interview-prepare/SKILL.md`, follow every evidence and validation gate, and stop rather than inventing missing candidate facts.

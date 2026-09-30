@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schema_version", "template_id", "opportunity", "candidate", "locales"],
+  "properties": {
+    "schema_version": {"const": 2},
+    "template_id": {"const": "method-v1"},
+    "opportunity": {"type": "string", "pattern": "^[a-z0-9-]+/[a-z0-9-]+$"},
+    "candidate": {
+      "type": "object",
+      "required": ["email", "phone", "website", "location", "consent_to_publish"],
+      "properties": {
+        "email": {"type": "string"}, "phone": {"type": "string"}, "website": {"type": "string"},
+        "location": {"type": "string"}, "linkedin": {"type": "string"}, "youtube": {"type": "string"},
+        "photo": {"type": "string"}, "consent_to_publish": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "locales": {
+      "type": "object", "required": ["en", "ja"],
+      "properties": {"en": {"$ref": "#/$defs/locale"}, "ja": {"$ref": "#/$defs/locale"}},
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "fact_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^fact-"}, "uniqueItems": true},
+    "link": {
+      "type": "object", "required": ["label", "url"],
+      "properties": {"label": {"type": "string", "minLength": 1}, "url": {"type": "string", "pattern": "^https://"}},
+      "additionalProperties": false
+    },
+    "claim": {
+      "type": "object", "required": ["block_id", "text", "fact_ids"],
+      "properties": {
+        "block_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,119}$"},
+        "text": {"type": "string", "minLength": 1}, "fact_ids": {"$ref": "#/$defs/fact_ids"},
+        "links": {"type": "array", "items": {"$ref": "#/$defs/link"}}
+      },
+      "additionalProperties": false
+    },
+    "tag": {
+      "type": "object", "required": ["block_id", "text", "fact_ids"],
+      "properties": {"block_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,119}$"}, "text": {"type": "string", "minLength": 1, "maxLength": 32}, "fact_ids": {"$ref": "#/$defs/fact_ids"}},
+      "additionalProperties": false
+    },
+    "language": {
+      "type": "object", "required": ["block_id", "language", "level", "fact_ids"],
+      "properties": {"block_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,119}$"}, "language": {"type": "string", "minLength": 1}, "level": {"type": "string", "minLength": 1}, "fact_ids": {"$ref": "#/$defs/fact_ids"}},
+      "additionalProperties": false
+    },
+    "education": {
+      "type": "object", "required": ["block_id", "institution", "detail", "period", "fact_ids"],
+      "properties": {"block_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,119}$"}, "institution": {"type": "string", "minLength": 1}, "detail": {"type": "string"}, "period": {"type": "string"}, "fact_ids": {"$ref": "#/$defs/fact_ids"}},
+      "additionalProperties": false
+    },
+    "award": {
+      "type": "object", "required": ["block_id", "year", "text", "fact_ids"],
+      "properties": {"block_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,119}$"}, "year": {"type": "string"}, "text": {"type": "string", "minLength": 1}, "fact_ids": {"$ref": "#/$defs/fact_ids"}},
+      "additionalProperties": false
+    },
+    "signal": {
+      "type": "object", "required": ["block_id", "label", "text", "fact_ids"],
+      "properties": {"block_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,119}$"}, "label": {"type": "string", "minLength": 1}, "text": {"type": "string", "minLength": 1}, "fact_ids": {"$ref": "#/$defs/fact_ids"}},
+      "additionalProperties": false
+    },
+    "experience": {
+      "type": "object", "required": ["block_id", "company", "role", "period", "location", "fact_ids", "responsibilities", "achievements"],
+      "properties": {
+        "block_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,119}$"}, "company": {"type": "string", "minLength": 1},
+        "role": {"type": "string", "minLength": 1}, "period": {"type": "string", "minLength": 1}, "location": {"type": "string"},
+        "fact_ids": {"$ref": "#/$defs/fact_ids"},
+        "responsibilities": {"type": "array", "minItems": 1, "maxItems": 3, "description": "Drafts may expose an evidence gap with one item; strict final validation requires two or three distinct, grounded responsibility bullets.", "items": {"$ref": "#/$defs/claim"}},
+        "achievements": {"type": "array", "minItems": 1, "maxItems": 3, "description": "Drafts may expose an evidence gap with one item; strict final validation requires two or three distinct, grounded achievement bullets.", "items": {"$ref": "#/$defs/claim"}}
+      },
+      "additionalProperties": false
+    },
+    "career_row": {
+      "type": "object", "required": ["block_id", "period", "title", "company", "location", "fact_ids"],
+      "properties": {"block_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,119}$"}, "period": {"type": "string", "minLength": 1}, "title": {"type": "string", "minLength": 1}, "company": {"type": "string", "minLength": 1}, "location": {"type": "string"}, "fact_ids": {"$ref": "#/$defs/fact_ids"}},
+      "additionalProperties": false
+    },
+    "expertise": {
+      "type": "object", "required": ["block_id", "title", "fact_ids", "bullets"],
+      "properties": {"block_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,119}$"}, "title": {"type": "string", "minLength": 1}, "fact_ids": {"$ref": "#/$defs/fact_ids"}, "bullets": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/claim"}}},
+      "additionalProperties": false
+    },
+    "sidebar": {
+      "type": "object", "required": ["labels", "languages", "skills", "tools", "education", "awards"],
+      "properties": {
+        "labels": {
+          "type": "object", "required": ["contact", "languages", "skills", "tools", "education", "awards"],
+          "properties": {"contact": {"type": "string", "minLength": 1}, "languages": {"type": "string", "minLength": 1}, "skills": {"type": "string", "minLength": 1}, "tools": {"type": "string", "minLength": 1}, "education": {"type": "string", "minLength": 1}, "awards": {"type": "string", "minLength": 1}},
+          "additionalProperties": false
+        },
+        "languages": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/language"}},
+        "skills": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/tag"}},
+        "tools": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/tag"}},
+        "education": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/education"}},
+        "awards": {"type": "array", "items": {"$ref": "#/$defs/award"}}
+      },
+      "additionalProperties": false
+    },
+    "locale": {
+      "type": "object", "required": ["name", "headline", "sidebar", "section_labels", "self_introduction", "signals", "professional_experience", "earlier_career", "expertise", "self_pr"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1}, "headline": {"type": "string", "minLength": 1}, "sidebar": {"$ref": "#/$defs/sidebar"},
+        "section_labels": {
+          "type": "object", "required": ["self_introduction", "professional_experience", "responsibilities", "achievements", "earlier_career", "earlier_headers", "expertise", "self_pr"],
+          "properties": {
+            "self_introduction": {"type": "string", "minLength": 1}, "professional_experience": {"type": "string", "minLength": 1},
+            "responsibilities": {"type": "string", "minLength": 1}, "achievements": {"type": "string", "minLength": 1},
+            "earlier_career": {"type": "string", "minLength": 1}, "earlier_headers": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "string", "minLength": 1}},
+            "expertise": {"type": "string", "minLength": 1}, "self_pr": {"type": "string", "minLength": 1}
+          },
+          "additionalProperties": false
+        },
+        "self_introduction": {"type": "array", "minItems": 2, "maxItems": 3, "description": "Two or three conversational, professional paragraphs covering strengths and relevant experience.", "items": {"$ref": "#/$defs/claim"}},
+        "signals": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"$ref": "#/$defs/signal"}},
+        "professional_experience": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/experience"}},
+        "earlier_career": {"type": "array", "items": {"$ref": "#/$defs/career_row"}},
+        "expertise": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"$ref": "#/$defs/expertise"}},
+        "self_pr": {"type": "array", "minItems": 2, "maxItems": 3, "description": "Two or three sincere, position-specific paragraphs explaining practical interest and career direction through grounded experience plus at least one concrete project, portfolio case, responsibility, or achievement; company mission must not be the primary motivation.", "items": {"$ref": "#/$defs/claim"}}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

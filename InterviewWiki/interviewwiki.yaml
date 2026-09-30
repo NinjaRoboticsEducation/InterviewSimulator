@@ -1,0 +1,30 @@
+version: 1
+paths:
+  job_descriptions: JobDescriptions
+  personal_wiki: PersonalWiki
+  output: Output
+  runtime: .interviewwiki
+  resume_template: templates/resume/method-v1
+workflow:
+  schema_version: 2
+  minimum_questions: 5
+  require_bilingual_resume: true
+  strict_candidate_grounding: true
+privacy:
+  candidate_processing: local-only
+  external_research_candidate_data: forbidden
+distribution:
+  clean_template: false
+resume:
+  profile_photo_filenames: [Profile.png, Profile.jpg, Profile.jpeg]
+  palette:
+    paper: "#fff7f6"
+    sheet: "#ffffff"
+    ink: "#231f20"
+    muted: "#736764"
+    line: "#eadbd7"
+    panel: "#fff7f2"
+    deep: "#2d2022"
+    accent: "#e60023"
+    accent_secondary: "#0b777f"
+    gold: "#936622"

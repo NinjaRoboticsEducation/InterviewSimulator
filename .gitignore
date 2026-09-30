@@ -7,3 +7,22 @@ __pycache__/
 .coverage
 htmlcov/
 .DS_Store
+.simulator/
+models/
+
+.serena/
+agents/**/.adk/
+
+# Private candidate and opportunity material stays on the user's device.
+InterviewWiki/JobDescriptions/
+InterviewWiki/Output/
+InterviewWiki/PersonalWiki/raw/
+InterviewWiki/PersonalWiki/wiki/
+InterviewWiki/.interviewwiki/
+InterviewWiki/PersonalWiki/.llmwiki/
+.env
+.env.*
+!.env.example
+*.gguf
+*.sqlite
+*.sqlite-*

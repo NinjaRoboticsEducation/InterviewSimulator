@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "personal_wiki_hash", "content_hash", "facts"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "generated_at": {"type": "string"},
+    "personal_wiki_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "content_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fact_id", "kind", "statement", "wiki_page", "evidence", "confidence", "sensitive"],
+        "properties": {
+          "fact_id": {"type": "string", "pattern": "^fact-[a-z0-9][a-z0-9-]{2,119}$"},
+          "kind": {"enum": ["employment", "responsibility", "achievement", "skill", "project", "education", "language", "award", "portfolio"]},
+          "statement": {"type": "string", "minLength": 1},
+          "wiki_page": {"type": "string", "pattern": "^wiki/"},
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["source_id", "source_hash"],
+              "properties": {
+                "source_id": {"type": "string", "pattern": "^src-"},
+                "source_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "qualifiers": {"type": "object"},
+          "confidence": {"enum": ["confirmed", "needs-review"]},
+          "sensitive": {"type": "boolean"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
