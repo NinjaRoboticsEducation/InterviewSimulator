@@ -62,13 +62,15 @@ class LocalRequestMiddleware:
             await JSONResponse({"detail": "Request upload timed out."}, 408)(scope, receive, send)
             return
         delivered = False
+        disconnected = asyncio.Event()
 
         async def replay():
             nonlocal delivered
             if not delivered:
                 delivered = True
                 return {"type": "http.request", "body": bytes(body), "more_body": False}
-            return await receive()
+            await disconnected.wait()
+            return {"type": "http.disconnect"}
 
         async def secured_send(message):
             if message["type"] == "http.response.start":
@@ -85,4 +87,26 @@ class LocalRequestMiddleware:
                 )
             await send(message)
 
-        await self.app(scope, replay, secured_send)
+        async def watch_disconnect():
+            while True:
+                if (await receive())["type"] == "http.disconnect":
+                    disconnected.set()
+                    return
+
+        async def invoke():
+            await self.app(scope, replay, secured_send)
+
+        application = asyncio.create_task(invoke())
+        watcher = asyncio.create_task(watch_disconnect())
+        try:
+            done, _ = await asyncio.wait({application, watcher}, return_when=asyncio.FIRST_COMPLETED)
+            if application in done:
+                await application
+            else:
+                # A closed browser must not leave preparation or native speech running.
+                application.cancel()
+        finally:
+            for task in (application, watcher):
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(application, watcher, return_exceptions=True)

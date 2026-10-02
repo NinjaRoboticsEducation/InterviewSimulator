@@ -1,0 +1,393 @@
+{
+  "version": "fictional-intents-v1",
+  "fictional": true,
+  "review_status": "awaiting-native-review",
+  "purpose": "Reference questions for regression and future model/human review; not proof of model quality.",
+  "protected_names": [
+    "ExampleCo",
+    "GTM",
+    "ROI",
+    "APAC"
+  ],
+  "cases": [
+    {
+      "intent_id": "introduce-background",
+      "category": "personal",
+      "source_locale": "en",
+      "features": [],
+      "questions": {
+        "en": "Please introduce yourself and explain which experience prepares you for this role.",
+        "ja": "自己紹介をして、この職務に役立つ経験を説明してください。",
+        "zh-Hant": "請先自我介紹，並說明哪些經驗讓你適合這個職務。"
+      }
+    },
+    {
+      "intent_id": "career-motivation",
+      "category": "personal",
+      "source_locale": "ja",
+      "features": [],
+      "questions": {
+        "en": "Why are you considering a career change, and what do you want to learn?",
+        "ja": "転職を考えている理由と、今後学びたいことを教えてください。",
+        "zh-Hant": "你為什麼考慮轉職？接下來希望學習什麼？"
+      }
+    },
+    {
+      "intent_id": "individual-contribution",
+      "category": "personal",
+      "source_locale": "zh-Hant",
+      "features": [
+        "team_ownership",
+        "numbers"
+      ],
+      "questions": {
+        "en": "Your profile says you supported 3 team projects. What did you personally contribute?",
+        "ja": "プロフィールには3件のチームのプロジェクトを支援したとあります。ご自身は何を担当しましたか。",
+        "zh-Hant": "你的個人資料提到曾支援3個團隊專案。你本人負責哪些工作？"
+      }
+    },
+    {
+      "intent_id": "career-gap",
+      "category": "personal",
+      "source_locale": "en",
+      "features": [
+        "dates"
+      ],
+      "questions": {
+        "en": "How did you use your career break in 2024, and how did it prepare you to return?",
+        "ja": "2024年の休職期間をどのように過ごし、復職に向けて何を準備しましたか。",
+        "zh-Hant": "你如何運用2024年的職涯休息期間？為重返職場做了哪些準備？"
+      }
+    },
+    {
+      "intent_id": "learning-limits",
+      "category": "personal",
+      "source_locale": "ja",
+      "features": [
+        "uncertainty",
+        "missing_evidence"
+      ],
+      "questions": {
+        "en": "You have not yet used this tool professionally. How would you learn it without overstating your experience?",
+        "ja": "このツールを実務ではまだ使っていないとのことです。経験を誇張せず、どのように習得しますか。",
+        "zh-Hant": "你尚未在實務中使用這個工具。你會如何學習，並避免誇大自己的經驗？"
+      }
+    },
+    {
+      "intent_id": "transferable-skill",
+      "category": "personal",
+      "source_locale": "zh-Hant",
+      "features": [],
+      "questions": {
+        "en": "Which skill from your previous work would transfer best to this role, and why?",
+        "ja": "これまでの仕事で身につけた能力のうち、この職務に最も生かせるものは何ですか。理由も教えてください。",
+        "zh-Hant": "過去工作中學到的哪項能力最能運用在這個職務？為什麼？"
+      }
+    },
+    {
+      "intent_id": "ethical-pressure",
+      "category": "professionalism",
+      "source_locale": "en",
+      "features": [
+        "negation"
+      ],
+      "questions": {
+        "en": "If asked to report a result that is not verified, how would you respond?",
+        "ja": "確認できていない成果を報告するよう求められたら、どのように対応しますか。",
+        "zh-Hant": "如果被要求報告尚未查證的成果，你會如何回應？"
+      }
+    },
+    {
+      "intent_id": "constructive-disagreement",
+      "category": "professionalism",
+      "source_locale": "ja",
+      "features": [],
+      "questions": {
+        "en": "Describe a disagreement with a colleague and how you kept the discussion constructive.",
+        "ja": "同僚と意見が合わなかった経験と、建設的な話し合いを続けるためにしたことを教えてください。",
+        "zh-Hant": "請描述一次與同事意見不同的經驗，以及你如何讓討論保持建設性。"
+      }
+    },
+    {
+      "intent_id": "missed-deadline",
+      "category": "professionalism",
+      "source_locale": "zh-Hant",
+      "features": [],
+      "questions": {
+        "en": "Tell me about a deadline you missed. How did you communicate it and change your approach?",
+        "ja": "期限に間に合わなかった経験を教えてください。どのように伝え、その後の進め方をどう変えましたか。",
+        "zh-Hant": "請談談一次未能如期完成工作的經驗。你如何溝通，並調整之後的做法？"
+      }
+    },
+    {
+      "intent_id": "confidentiality",
+      "category": "professionalism",
+      "source_locale": "en",
+      "features": [],
+      "questions": {
+        "en": "How would you discuss a confidential project in an interview while respecting your obligations?",
+        "ja": "守秘義務のあるプロジェクトについて、義務を守りながら面接でどのように説明しますか。",
+        "zh-Hant": "面試中如果需要談到保密專案，你會如何說明並遵守保密義務？"
+      }
+    },
+    {
+      "intent_id": "feedback-application",
+      "category": "professionalism",
+      "source_locale": "ja",
+      "features": [],
+      "questions": {
+        "en": "Describe difficult feedback you received and what you changed afterward.",
+        "ja": "受け止めるのが難しかった指摘と、それを受けて変えたことを教えてください。",
+        "zh-Hant": "請描述一次難以接受的回饋，以及你之後做了哪些改變。"
+      }
+    },
+    {
+      "intent_id": "prioritization",
+      "category": "professionalism",
+      "source_locale": "zh-Hant",
+      "features": [
+        "numbers"
+      ],
+      "questions": {
+        "en": "If 2 urgent tasks arrive together, how would you decide their order and explain the tradeoff?",
+        "ja": "緊急の仕事が2件同時に来たら、優先順位をどう決め、何を優先したかをどう説明しますか。",
+        "zh-Hant": "如果同時收到2項緊急工作，你會如何安排順序，並說明取捨？"
+      }
+    },
+    {
+      "intent_id": "strategy-to-outcome",
+      "category": "portfolio",
+      "source_locale": "en",
+      "features": [
+        "terminology",
+        "team_ownership",
+        "missing_evidence"
+      ],
+      "questions": {
+        "en": "Your profile mentions creative strategy, GTM campaign planning and ROI optimization across APAC markets. What did you personally do, and which results can you verify?",
+        "ja": "プロフィールには、APAC市場でのクリエイティブ戦略、GTMキャンペーンの企画、ROIの最適化が記載されています。ご自身は具体的に何を担当し、どの成果を確認できますか。",
+        "zh-Hant": "你的個人資料提到APAC市場的創意策略、GTM行銷活動規劃與ROI最佳化。你本人具體負責什麼？哪些成果可以查證？"
+      }
+    },
+    {
+      "intent_id": "testing-without-leadership",
+      "category": "portfolio",
+      "source_locale": "ja",
+      "features": [
+        "negation",
+        "team_ownership"
+      ],
+      "questions": {
+        "en": "You wrote tests but did not lead the project. How did your contribution fit into the team effort?",
+        "ja": "テストを作成したものの、プロジェクトを率いたわけではないとのことです。ご自身の貢献はチームの取り組みにどう関わりましたか。",
+        "zh-Hant": "你編寫了測試，但沒有領導這個專案。你的貢獻如何配合團隊的工作？"
+      }
+    },
+    {
+      "intent_id": "metric-attribution",
+      "category": "portfolio",
+      "source_locale": "zh-Hant",
+      "features": [
+        "numbers",
+        "uncertainty",
+        "team_ownership"
+      ],
+      "questions": {
+        "en": "The team reported a 20% improvement. How would you distinguish your contribution from other causes?",
+        "ja": "チームは20%の改善を報告しています。ご自身の貢献と、ほかの要因の影響をどう区別しますか。",
+        "zh-Hant": "團隊報告了20%的改善。你會如何區分自己的貢獻與其他因素的影響？"
+      }
+    },
+    {
+      "intent_id": "design-tradeoff",
+      "category": "portfolio",
+      "source_locale": "en",
+      "features": [
+        "numbers"
+      ],
+      "questions": {
+        "en": "Describe 1 portfolio design decision, an alternative you rejected and the tradeoff you accepted.",
+        "ja": "作品の設計で下した1件の判断、採用しなかった案、受け入れた制約を説明してください。",
+        "zh-Hant": "請說明作品中的1項設計決策、未採用的替代方案，以及你接受的取捨。"
+      }
+    },
+    {
+      "intent_id": "unmeasured-adoption",
+      "category": "portfolio",
+      "source_locale": "ja",
+      "features": [
+        "missing_evidence",
+        "negation"
+      ],
+      "questions": {
+        "en": "There is no verified adoption figure for your service. What evidence could you collect before claiming impact?",
+        "ja": "そのサービスの利用状況を示す数値は確認できていません。効果を主張する前に、どのような証拠を集めますか。",
+        "zh-Hant": "目前沒有可查證的服務使用數據。在主張影響之前，你可以蒐集哪些證據？"
+      }
+    },
+    {
+      "intent_id": "project-iteration",
+      "category": "portfolio",
+      "source_locale": "zh-Hant",
+      "features": [
+        "dates"
+      ],
+      "questions": {
+        "en": "What changed between your prototype in 2023 and the revised version in 2024, and why?",
+        "ja": "2023年の試作品と2024年の改訂版では何を変えましたか。その理由も教えてください。",
+        "zh-Hant": "從2023年的原型到2024年的修訂版本，你改變了什麼？為什麼？"
+      }
+    },
+    {
+      "intent_id": "requirements-clarification",
+      "category": "role",
+      "source_locale": "en",
+      "features": [],
+      "questions": {
+        "en": "How would you clarify an ambiguous request before starting implementation?",
+        "ja": "実装を始める前に、曖昧な依頼の内容をどのように確認しますか。",
+        "zh-Hant": "開始實作之前，你會如何釐清模糊的需求？"
+      }
+    },
+    {
+      "intent_id": "incident-triage",
+      "category": "role",
+      "source_locale": "ja",
+      "features": [],
+      "questions": {
+        "en": "A service becomes unreliable during a release. What would you check first and communicate?",
+        "ja": "リリース中にサービスが不安定になったら、最初に何を確認し、何を伝えますか。",
+        "zh-Hant": "如果發布期間服務變得不穩定，你會先檢查什麼，又會如何溝通？"
+      }
+    },
+    {
+      "intent_id": "market-launch",
+      "category": "role",
+      "source_locale": "zh-Hant",
+      "features": [
+        "terminology"
+      ],
+      "questions": {
+        "en": "How would you plan a GTM launch for an APAC market and choose measures of success?",
+        "ja": "APAC市場でのGTM施策をどのように計画し、成功を判断する指標をどう選びますか。",
+        "zh-Hant": "你會如何規劃APAC市場的GTM活動，並選擇衡量成功的指標？"
+      }
+    },
+    {
+      "intent_id": "estimate-uncertainty",
+      "category": "role",
+      "source_locale": "en",
+      "features": [
+        "uncertainty",
+        "numbers"
+      ],
+      "questions": {
+        "en": "You have 3 days and an uncertain requirement. How would you estimate the work and communicate risk?",
+        "ja": "作業期間は3日で、要件には不確かな点があります。作業量をどう見積もり、リスクをどう伝えますか。",
+        "zh-Hant": "你有3天時間，但需求仍有不確定之處。你會如何估算工作量並溝通風險？"
+      }
+    },
+    {
+      "intent_id": "measurement-before-optimization",
+      "category": "role",
+      "source_locale": "ja",
+      "features": [
+        "terminology",
+        "missing_evidence"
+      ],
+      "questions": {
+        "en": "If ROI data is missing, how would you decide what to measure before recommending an optimization?",
+        "ja": "ROIのデータがない場合、改善策を提案する前に何を測定するか、どう決めますか。",
+        "zh-Hant": "如果缺少ROI數據，你會如何決定先衡量什麼，再提出最佳化建議？"
+      }
+    },
+    {
+      "intent_id": "technical-communication",
+      "category": "role",
+      "source_locale": "zh-Hant",
+      "features": [],
+      "questions": {
+        "en": "How would you explain a technical limitation to a colleague without that technical background?",
+        "ja": "専門知識のない同僚に、技術的な制約をどのように説明しますか。",
+        "zh-Hant": "你會如何向沒有相關技術背景的同事解釋技術限制？"
+      }
+    },
+    {
+      "intent_id": "company-motivation",
+      "category": "company",
+      "source_locale": "en",
+      "features": [
+        "protected_name"
+      ],
+      "questions": {
+        "en": "What interests you about ExampleCo, and which approved company information supports your answer?",
+        "ja": "ExampleCoのどのような点に関心がありますか。その回答を裏づける確認済みの企業情報も教えてください。",
+        "zh-Hant": "ExampleCo的哪些地方吸引你？哪些已確認的公司資訊支持你的回答？"
+      }
+    },
+    {
+      "intent_id": "customer-understanding",
+      "category": "company",
+      "source_locale": "ja",
+      "features": [
+        "protected_name",
+        "uncertainty"
+      ],
+      "questions": {
+        "en": "Based on the available information, what customer problem might ExampleCo address, and what remains uncertain?",
+        "ja": "現在の情報から、ExampleCoはどのような顧客の課題に取り組んでいると考えますか。まだ不確かな点も教えてください。",
+        "zh-Hant": "根據現有資訊，ExampleCo可能解決哪些客戶問題？哪些部分仍不確定？"
+      }
+    },
+    {
+      "intent_id": "values-in-practice",
+      "category": "company",
+      "source_locale": "zh-Hant",
+      "features": [],
+      "questions": {
+        "en": "Which published company value connects with your experience, and what example would you give?",
+        "ja": "公表されている企業の価値観のうち、ご自身の経験に合うものは何ですか。具体例も教えてください。",
+        "zh-Hant": "公司公開的哪項價值觀與你的經驗相符？你會舉什麼例子？"
+      }
+    },
+    {
+      "intent_id": "first-month-plan",
+      "category": "company",
+      "source_locale": "en",
+      "features": [
+        "numbers"
+      ],
+      "questions": {
+        "en": "What would you learn in your first 30 days before proposing changes?",
+        "ja": "入社後の最初の30日間に、改善を提案する前に何を学びますか。",
+        "zh-Hant": "到職後的前30天，你會先了解什麼，再提出改變建議？"
+      }
+    },
+    {
+      "intent_id": "unconfirmed-expansion",
+      "category": "company",
+      "source_locale": "ja",
+      "features": [
+        "negation",
+        "uncertainty",
+        "protected_name"
+      ],
+      "questions": {
+        "en": "Expansion plans for ExampleCo are not confirmed. What would you ask instead of assuming they are decided?",
+        "ja": "ExampleCoの事業拡大計画は確認されていません。決定済みと考えず、どのような質問をしますか。",
+        "zh-Hant": "ExampleCo的擴張計畫尚未確認。你會提出哪些問題，而不是假設計畫已經確定？"
+      }
+    },
+    {
+      "intent_id": "candidate-questions",
+      "category": "company",
+      "source_locale": "zh-Hant",
+      "features": [],
+      "questions": {
+        "en": "What would you ask the interviewer to understand the expectations and support for this role?",
+        "ja": "この職務への期待と支援体制を知るために、面接官に何を質問しますか。",
+        "zh-Hant": "為了了解這個職務的期待與支援，你會向面試官詢問什麼？"
+      }
+    }
+  ]
+}

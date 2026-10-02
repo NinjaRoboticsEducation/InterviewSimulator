@@ -71,11 +71,6 @@ EVIDENCE_PROMPTS = {
 }
 
 
-def _excerpt(value: object, limit: int = 220) -> str:
-    words = " ".join(str(value).split())
-    return words[:limit].rstrip() + ("…" if len(words) > limit else "")
-
-
 @dataclass(frozen=True)
 class Question:
     question_id: str
@@ -86,6 +81,8 @@ class Question:
     requirement_ids: tuple[str, ...]
     source_question_id: str | None = None
     source_ids: tuple[str, ...] = ()
+    original_text: str | None = None
+    localization_version: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -164,13 +161,15 @@ def make_fixed_questions(snapshot: dict[str, Any], locale: str) -> list[Question
         if index in {1, 4, 5}:
             fact_id = fact_ids[fact_position % len(fact_ids)]
             fact = next(item["statement"] for item in facts if item["fact_id"] == fact_id)
-            text = EVIDENCE_PROMPTS[locale][index].format(fact=_excerpt(fact))
+            if len(str(fact)) <= 1800:
+                text = EVIDENCE_PROMPTS[locale][index].format(fact=str(fact).strip())
         elif index in {8, 9} and trusted_research:
             source = trusted_research[(index - 8) % len(trusted_research)]
             bound_sources = (str(source["source_id"]),)
-            text = EVIDENCE_PROMPTS[locale][index].format(
-                company=snapshot["company"], research=_excerpt(source["excerpt"])
-            )
+            if len(str(source["excerpt"])) <= 1800:
+                text = EVIDENCE_PROMPTS[locale][index].format(
+                    company=snapshot["company"], research=str(source["excerpt"]).strip()
+                )
         result.append(
             Question(
                 f"q-{index + 1:02d}",
@@ -222,4 +221,73 @@ def make_fixed_questions(snapshot: dict[str, Any], locale: str) -> list[Question
             )
             used_slots.add(slot)
     validate_questions(result, set(fact_ids), set(req_ids), source_ids)
+    return result
+
+
+def compose_variants(questions: list[Question], choices: Any, facts: dict[str, str]) -> list[Question]:
+    """Never let a generated question invent a premise about the candidate."""
+    if not isinstance(choices, list) or len(choices) != 10:
+        raise ValueError("Question design requires ten focus selections")
+    suffixes = {
+        "en": {
+            "approach": "How would you explain your approach?",
+            "result": "What outcome would demonstrate success?",
+            "reflection": "What would you improve, and why?",
+        },
+        "ja": {
+            "approach": "進め方をどのように説明しますか。",
+            "result": "成功をどのような成果で示しますか。",
+            "reflection": "何を改善したいですか。その理由も教えてください。",
+        },
+        "zh-Hant": {
+            "approach": "你會如何說明自己的做法？",
+            "result": "哪些成果能說明成功？",
+            "reflection": "你會改進什麼？為什麼？",
+        },
+    }
+    evidence = {
+        "en": "Consider this confirmed experience: “{fact}”",
+        "ja": "確認済みの経験「{fact}」について考えてください。",
+        "zh-Hant": "請參考這段已確認的經驗：「{fact}」。",
+    }
+    result = []
+    for ordinal, (q, choice) in enumerate(zip(questions, choices), 1):
+        if (
+            not isinstance(choice, dict)
+            or type(choice.get("ordinal")) is not int
+            or choice["ordinal"] != ordinal
+        ):
+            raise ValueError("Question focus selections must preserve ordinal order")
+        focus, fid = choice.get("focus"), choice.get("fact_id")
+        if focus not in {"baseline", "approach", "result", "reflection"} or not isinstance(fid, str):
+            raise ValueError("Unknown question focus")
+        if fid and (fid not in facts or q.category not in {"personal", "portfolio"}):
+            raise ValueError("Question design references unsupported evidence")
+        if ordinal == 1 and (focus != "baseline" or fid not in {"", *q.fact_ids}):
+            raise ValueError("Self-introduction must remain the first question")
+        text = q.text
+        refs = q.fact_ids
+        if focus != "baseline":
+            if fid and len(facts[fid]) <= 1800:
+                text = evidence[q.locale].format(fact=facts[fid])
+                refs = (fid,)
+            text += " " + suffixes[q.locale][focus]
+        result.append(
+            Question(
+                q.question_id,
+                q.category,
+                text,
+                q.locale,
+                refs,
+                q.requirement_ids,
+                q.source_question_id,
+                q.source_ids,
+            )
+        )
+    validate_questions(
+        result,
+        set(facts),
+        {r for q in questions for r in q.requirement_ids},
+        {s for q in questions for s in q.source_ids},
+    )
     return result

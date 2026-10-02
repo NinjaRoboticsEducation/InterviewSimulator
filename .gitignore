@@ -26,3 +26,12 @@ InterviewWiki/PersonalWiki/.llmwiki/
 *.gguf
 *.sqlite
 *.sqlite-*
+
+.native/
+
+.voice-piper/
+
+# Private investigation prompts and raw qualification output.
+doc/prompt.md
+doc/refinement-*.json
+release/

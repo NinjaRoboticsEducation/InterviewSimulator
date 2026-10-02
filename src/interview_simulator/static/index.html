@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="interview-token" content="__REQUEST_TOKEN__">
+<title>InterviewSimulator — your interview desk</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="/static/i18n.js" defer></script><script src="/static/app.js" defer></script><script src="/static/setup.js" defer></script>
+</head>
+<body>
+<header class="app-header"><a id="home-link" class="wordmark" href="/">InterviewSimulator</a><span id="connection-summary">Private practice · local speech</span></header>
+<div class="workspace">
+<nav class="workflow" aria-label="Practice steps">
+<button data-screen="connection-screen">1 Connection</button><button data-screen="models-screen">2 Models</button>
+<button data-screen="job-screen">3 Job & readiness</button><button data-screen="interview-screen">4 Interview</button>
+<button id="review-nav">5 Review answers</button><button data-screen="report-screen">6 Report</button>
+</nav>
+<main>
+<section class="screen" id="connection-screen">
+<h1 id="title">Your interview desk</h1><p id="intro">Prepare for a real opportunity, one answer at a time.</p>
+<label for="ui-locale">Interface language</label><select id="ui-locale"><option value="en">English</option><option value="ja">日本語</option><option value="zh-Hant">繁體中文</option></select>
+<p>Choose where your text is processed. Recordings and speech stay on this device.</p>
+<label for="provider">Text model provider</label><select id="provider"><option value="local">Local model (default)</option><option value="google">Google</option><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="ollama">Ollama</option></select>
+<div id="local-help"><p>Start your Qwen llama.cpp server for local evaluation. Use 9B Q4_K_M for quality, or 4B Q4_K_M for a shorter report wait.</p><code>uv run interview-simulator local-server</code><p>The server can start without a local model. Choose a cloud provider to use cloud text instead.</p></div>
+<div id="ollama-setup" hidden><label for="ollama-connection">Saved Ollama connection</label><select id="ollama-connection"></select>
+<label for="ollama-mode">Connection mode</label><select id="ollama-mode"><option value="local">Own computer</option><option value="cloud">Official cloud</option></select>
+<label for="ollama-endpoint">Ollama address</label><input id="ollama-endpoint" value="http://127.0.0.1:11434">
+<label for="ollama-context">Local context tokens</label><input id="ollama-context" type="number" min="4096" max="16384" value="4096">
+<p>For cloud models through your local Ollama server, run ollama signin first. A key entered here does not sign in the daemon. Direct official cloud uses your API key.</p><p>Local keys are optional. Official cloud requires a key. A local daemon can also send text to a cloud model; review model locality before starting.</p></div>
+<div id="cloud-key" hidden><label for="api-key">Provider API key</label><input id="api-key" type="password" autocomplete="off" spellcheck="false" aria-describedby="key-note">
+<p id="key-note" class="muted">The key is sent to your local server once. It is never saved in browser storage or included in reports.</p>
+<label class="check"><input id="remember-key" type="checkbox">Remember on this device using the OS credential vault</label>
+<div class="actions"><button id="connect">Check key and load models</button><button id="reconnect-saved" class="secondary">Reconnect saved key</button><button id="disconnect" class="secondary">Disconnect</button><button id="forget-key" class="secondary">Forget saved key</button></div></div>
+<p id="provider-status" role="status" aria-live="polite"></p><div class="actions"><button id="connection-next">Choose models</button></div>
+</section>
+<section class="screen" id="models-screen" hidden>
+<h1>Choose your text models</h1><p>Use one model for all text tasks, or choose a model for each task. Audio processing always stays local.</p>
+<label for="main-model">Text model</label><select id="main-model"></select><p id="model-note" class="muted"></p>
+<div class="actions"><button id="refresh-models" class="secondary">Refresh models</button><button id="probe-main" class="secondary">Test model (may incur charges)</button><button id="stop-model-test" class="secondary" hidden>Stop model test</button></div>
+<details id="advanced-models"><summary>Advanced model settings</summary><div id="task-models"></div>
+<label class="check"><input id="generate-questions" type="checkbox">Prepare new question variants before the interview</label>
+<label class="check"><input id="generate-summary" type="checkbox">Add an overall practice summary</label>
+<label for="call-budget">Maximum ADK task attempts per run, including repairs (transport retries may add requests)</label><input id="call-budget" type="number" value="48" min="1" max="60"></details>
+<p id="settings-status" role="status" aria-live="polite"></p><p class="muted">API charges depend on your provider and model. A timeout may still be billed. Unknown models require a successful synthetic schema check.</p>
+<div class="actions"><button data-screen="connection-screen" class="secondary">Back</button><button id="save-models">Save models and choose a job</button></div>
+</section>
+<section class="screen" id="job-screen" hidden>
+<h1>Choose the opportunity you want to practise</h1><p>The job package and reviewed PersonalWiki must be prepared first. Each practice run has its own report.</p>
+<label for="job">Prepared job opportunity</label><select id="job"></select><p id="history" class="muted"></p>
+<label for="locale">Interview language</label><select id="locale"><option value="en">English</option><option value="ja">日本語</option><option value="zh-Hant">繁體中文 / Mandarin</option></select>
+<label for="flow">Question flow</label><select id="flow"><option value="fixed">Fixed practice</option><option value="adaptive">Adaptive question order</option></select>
+<div class="readiness"><h2>Before you begin</h2><p>Ten scored questions, with an opening greeting and a closing. You can correct answers before scoring starts.</p><p id="voice-status" role="status"></p><p id="data-disclosure">Selected model settings will be shown here.</p>
+<label class="check" id="consent-wrap" hidden><input id="cloud-consent" type="checkbox">I agree to send selected job/profile facts and confirmed answer text to the displayed providers. Audio stays local.</label></div>
+<h2>Saved interviews</h2><div id="saved-runs"></div><div class="actions"><button data-screen="models-screen" class="secondary">Back</button><button id="start">Start practice</button><button id="resume-job" hidden>Resume saved practice</button></div>
+</section>
+<section class="screen" id="interview-screen" hidden>
+<div class="interview-heading"><span id="progress">Question 1 of 10</span><span id="save-state" class="muted"></span></div><progress id="interview-progress" max="10" value="0" aria-label="Confirmed answers"></progress>
+<p id="run-label" class="muted"></p><button id="ceremony" class="secondary" hidden>Play greeting</button><h1 id="question"></h1>
+<div class="actions"><button id="play" class="secondary" hidden>Play question</button><button id="record" class="secondary" hidden>Record answer</button><button id="stop" class="secondary" hidden>Stop recording</button></div>
+<label for="answer" id="answer-label">Your answer</label><textarea id="answer" placeholder="Type, or record and review the transcript" hidden></textarea>
+<div class="actions"><button id="previous" class="secondary">Previous question</button><button id="submit" hidden>Confirm answer</button><button id="skip" class="secondary" hidden>Skip question</button><button id="continue-forward" class="secondary" hidden>Return to current question</button><button id="review-answers" class="secondary">Review answers</button></div>
+<div id="answer-review" hidden><h2 id="review-title">Review before scoring</h2><p id="review-note">Correct any earlier answer. Existing later questions stay in the same order. Generating a report locks the final answers.</p><div id="review-list"></div></div>
+<div class="actions"><button id="retry-preparation" hidden>Retry preparation</button><button id="baseline-preparation" hidden>Use native fixed questions</button></div><div class="actions"><button id="evaluate" hidden>Generate report</button><button id="resume-run" class="secondary" hidden>Resume practice</button><button id="pause-run" class="secondary">Pause interview</button><button id="cancel-run" class="text-button">Cancel interview</button><button id="restart-run" class="text-button">Restart interview</button></div>
+</section>
+<section class="screen" id="report-screen" hidden>
+<h1>Your practice report</h1><p id="report-progress">Review the answers, then generate your report.</p><div class="actions"><button id="stop-report" class="secondary" hidden>Stop report work</button><button id="retry-report" class="secondary">Resume unfinished report</button><button id="download-md" class="secondary">Download Markdown</button><button id="download-html" class="secondary">Download HTML</button><button id="print-report" class="secondary">Print report</button><button id="practice-again">Practice again</button></div><div class="actions"><button id="report-allowance" class="secondary">Allow 12 more attempts</button><button id="report-revision" class="secondary">New assessment with current model settings</button></div><div id="report" aria-live="polite"></div>
+</section>
+<p id="status" class="status" role="status" aria-live="polite"></p>
+</main></div><dialog id="confirm-dialog" aria-labelledby="confirm-message"><p id="confirm-message"></p><div class="actions"><button id="confirm-cancel" class="secondary">Back</button><button id="confirm-proceed">Continue</button></div></dialog><footer>Practise honestly. Use confirmed career facts. Your score describes this practice session.</footer>
+</body></html>

@@ -11,11 +11,16 @@ dependencies = [
   "uvicorn>=0.30,<1",
   "pydantic>=2.8,<3",
   "python-multipart>=0.0.9,<1",
+  "python-dotenv>=1,<2",
   "opencc-python-reimplemented>=0.1.7,<1",
   "interviewwiki>=0.2.1",
   "httpx>=0.27,<1",
   "openai>=2,<3",
   "filelock>=3,<5",
+  "markdown-it-py>=3,<5",
+  "nh3>=0.3,<1",
+  "keyring>=25,<26",
+  "jsonschema>=4.23,<5",
 ]
 
 [project.scripts]
@@ -41,7 +46,8 @@ markers = ["model: requires a live local language model", "hardware: requires ph
 
 [tool.ruff]
 line-length = 110
+extend-exclude = ["InterviewWiki"]
 
 [[tool.mypy.overrides]]
-module = ["interviewwiki.*", "opencc.*"]
+module = ["interviewwiki.*", "opencc.*", "jsonschema.*"]
 ignore_missing_imports = true

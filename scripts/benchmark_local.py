@@ -5,7 +5,9 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import tempfile
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 from interview_simulator.adk_runtime import LocalAdk
@@ -33,9 +35,21 @@ CASES = {
 
 async def main(model_file: Path, output: Path) -> None:
     root = Path(__file__).resolve().parents[1]
-    settings = Settings(root, root / "InterviewWiki", root / ".simulator", model_path=model_file.resolve())
+    temporary = tempfile.TemporaryDirectory(prefix="interview-benchmark-")
+    settings = Settings(
+        root, root / "InterviewWiki", Path(temporary.name).resolve(), model_path=model_file.resolve()
+    )
     adk = LocalAdk(settings)
-    results: dict = {"model": model_file.name, "cases": []}
+    results: dict = {
+        "model": model_file.name,
+        "cases": [],
+        "started_at": datetime.now(UTC).isoformat(),
+        "benchmark_version": "durability-v3",
+        "output_limits": {
+            "assessment": adk.plan.evaluation.max_output_tokens,
+            "coaching": adk.plan.coaching.max_output_tokens,
+        },
+    }
     started = time.monotonic()
     identity = await model_identity(settings)
     results["model_sha256"] = identity["gguf_sha256"]
@@ -61,13 +75,20 @@ async def main(model_file: Path, output: Path) -> None:
             row["assessment_language"] = {
                 key: evaluation[key] for key in ("strength", "improvement", "reason")
             }
+            row["assessment_prompt_sha256"] = evaluation["provenance"]["prompt_sha256"]
             row["assessment_model_sha256"] = evaluation["provenance"]["gguf_sha256"]
-            if locale == "en":
+            if locale in CASES:
                 began = time.monotonic()
                 coaching = await adk.coach(question, answer, {"fact-synthetic": fact}, evaluation)
                 row["coaching_seconds"] = round(time.monotonic() - began, 2)
-                row["coaching_grounded"] = fact in coaching["example"] and "[" in coaching["example"]
+                row["coaching_grounded"] = bool(coaching.get("grounding_review")) and not any(
+                    bracket in coaching["example"] for bracket in ("[add", "［")
+                )
                 row["coaching_example"] = coaching["example"]
+                row["coaching_advice"] = {
+                    key: coaching[key] for key in ("why_it_works", "outline", "next_action")
+                }
+                row["coaching_prompt_sha256"] = coaching["provenance"]["prompt_sha256"]
                 row["coaching_model_sha256"] = coaching["provenance"]["gguf_sha256"]
         except Exception as exc:  # noqa: BLE001 - record each benchmark failure and continue.
             row["error"] = f"{type(exc).__name__}: {exc}"
@@ -81,6 +102,7 @@ async def main(model_file: Path, output: Path) -> None:
             row.get("error", "ok"),
             flush=True,
         )
+    temporary.cleanup()
 
 
 if __name__ == "__main__":

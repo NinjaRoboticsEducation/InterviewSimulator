@@ -170,7 +170,8 @@ def test_coached_example_uses_only_exact_confirmed_fact_text():
     result = validate_coaching(raw, {"fact-abc": "Built a test service."}, question)
     assert "Built a test service." in result["example"]
     assert "900" not in result["example"]
-    assert "[add a verified result]" in result["example"]
+    assert "[add" not in result["example"]
+    assert "verify any outcome" in result["example"]
 
 
 def test_report_with_unavailable_assessment_is_provisional(tmp_path, snapshot):

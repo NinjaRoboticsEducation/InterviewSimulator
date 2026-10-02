@@ -25,4 +25,14 @@ jobs:
       - name: Install the locked project
         run: uv sync --locked --all-extras
       - name: Run tests
-        run: uv run --locked pytest --cov --cov-report=term-missing
+        run: uv run --locked pytest
+      - name: Lint and format
+        run: |
+          uv run --locked ruff check src agents tests scripts
+          uv run --locked ruff format --check src agents tests scripts
+      - name: Type checks
+        run: uv run --locked mypy src/interview_simulator --follow-imports=silent --check-untyped-defs
+      - name: Browser logic
+        run: |
+          node tests/browser_state.cjs
+          node tests/browser_voice.cjs

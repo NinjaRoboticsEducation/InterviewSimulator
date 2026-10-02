@@ -65,3 +65,39 @@ def test_say_receives_untrusted_text_on_stdin(monkeypatch):
 
     monkeypatch.setattr("interview_simulator.speech.subprocess.run", fake_run)
     assert Speech().speak("--output-file=/tmp/injected", "en") == b"RIFFsynthetic"
+
+
+def test_installed_mac_voices_are_selected_without_exports(monkeypatch):
+    from types import SimpleNamespace
+
+    from interview_simulator.speech import installed_voices, selected_voice
+
+    for name in ("EN", "JA", "ZH_HANT"):
+        monkeypatch.delenv(f"INTERVIEW_SIMULATOR_VOICE_{name}", raising=False)
+    monkeypatch.setattr("interview_simulator.speech.shutil.which", lambda _: "/usr/bin/say")
+    monkeypatch.setattr(
+        "interview_simulator.speech.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(
+            stdout="Samantha en_US # Hello\nKyoko ja_JP # こんにちは\nMeijia zh_TW # 你好\n"
+        ),
+    )
+    installed_voices.cache_clear()
+    try:
+        assert [selected_voice(locale) for locale in ("en", "ja", "zh-Hant")] == [
+            "Samantha",
+            "Kyoko",
+            "Meijia",
+        ]
+        monkeypatch.setenv("INTERVIEW_SIMULATOR_VOICE_EN", "Custom Voice")
+        assert selected_voice("en") == "Custom Voice"
+    finally:
+        installed_voices.cache_clear()
+
+
+def test_relative_whisper_path_is_bound_to_project_not_terminal(monkeypatch, tmp_path):
+    from pathlib import Path
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("INTERVIEW_SIMULATOR_WHISPER_MODEL", "models/whisper/ggml-small.bin")
+    expected = Path(__file__).resolve().parents[1] / "models/whisper/ggml-small.bin"
+    assert Speech().model_path == expected

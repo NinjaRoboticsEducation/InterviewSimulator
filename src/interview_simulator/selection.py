@@ -4,9 +4,18 @@ from __future__ import annotations
 
 import hashlib
 import re
+import unicodedata
 from typing import Any
 
-POLICY_VERSION = "bounded-bank-v1"
+POLICY_VERSION = "bounded-bank-v2-cjk"
+
+
+def tokens(text: str) -> set[str]:
+    normalized = unicodedata.normalize("NFKC", text).casefold()
+    terms = set(re.findall(r"[a-z0-9_]+", normalized))
+    for phrase in re.findall(r"[\u3040-\u30ff\u3400-\u9fff]+", normalized):
+        terms.update(phrase[i : i + 2] for i in range(len(phrase) - 1))
+    return terms
 
 
 def choose(run: dict[str, Any], ordinal: int) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -39,10 +48,10 @@ def choose(run: dict[str, Any], ordinal: int) -> tuple[dict[str, Any], dict[str,
         ):
             continue
         candidates.append(candidate)
-    tokens = set(re.findall(r"\w+", answer.casefold()))
+    answer_tokens = tokens(answer)
 
     def rank(question: dict[str, Any]) -> tuple[int, int, str]:
-        overlap = len(tokens & set(re.findall(r"\w+", question["text"].casefold())))
+        overlap = len(answer_tokens & tokens(question["text"]))
         # The fixed question wins ties, so sparse banks never disrupt the baseline.
         return (-overlap, 0 if question["text"] == fixed["text"] else 1, question["text"])
 
@@ -55,6 +64,6 @@ def choose(run: dict[str, Any], ordinal: int) -> tuple[dict[str, Any], dict[str,
         "candidate_count": len(candidates),
         "selected_text_sha256": "sha256:" + hashlib.sha256(chosen["text"].encode()).hexdigest(),
         "fallback": chosen["text"] == fixed["text"],
-        "reason": "answer token overlap within the required topic; fixed question wins ties",
+        "reason": "answer word/CJK bigram overlap within the required topic; fixed question wins ties",
     }
     return chosen, decision

@@ -206,6 +206,68 @@ def render_report(run: dict[str, Any]) -> str:
         score_note,
         "",
     ]
+    if run.get("report_state") in {"incomplete", "interrupted", "running", "retry_wait"}:
+        lines.extend(
+            [
+                {
+                    "en": "Report work is incomplete. Resume missing assessment, coaching or summary work; saved scores remain unchanged.",
+                    "ja": "レポート処理は未完了です。未完了の評価・助言・全体の練習課題を再開できます。保存済みスコアは変更されません。",
+                    "zh-Hant": "報告處理尚未完成。可接續未完成的評估、指導或摘要；已儲存分數保持不變。",
+                }[locale],
+                "",
+            ]
+        )
+    lines.extend(
+        [
+            {
+                "en": "AI feedback is practice advice, not verified career evidence. Check every suggested result or detail against your real experience before using it.",
+                "ja": "AIの助言は練習用であり、確認済みの経歴ではありません。提案された成果や詳細を実際の経験と照合してから使ってください。",
+                "zh-Hant": "AI回饋是練習建議，不是已確認的職涯證據。使用任何建議的成果或細節前，請與真實經歷核對。",
+            }[locale],
+            "",
+        ]
+    )
+    plan = run.get("report_options") or run["snapshot"].get("model_plan", {})
+    if plan:
+        headings = {
+            "en": ("Text models for this run", "Task", "Provider", "Model"),
+            "ja": ("この練習のテキストモデル", "処理", "提供元", "モデル"),
+            "zh-Hant": ("本次練習的文字模型", "任務", "供應商", "模型"),
+        }[locale]
+        tasks = {
+            "en": {
+                "questions": "Question preparation",
+                "evaluation": "Assessment",
+                "coaching": "Coaching",
+                "summary": "Priorities",
+            },
+            "ja": {
+                "questions": "質問の準備",
+                "evaluation": "評価",
+                "coaching": "助言",
+                "summary": "練習課題",
+            },
+            "zh-Hant": {
+                "questions": "題目準備",
+                "evaluation": "評估",
+                "coaching": "指導",
+                "summary": "練習重點",
+            },
+        }[locale]
+        lines.extend(
+            [
+                f"### {headings[0]}",
+                "",
+                f"| {headings[1]} | {headings[2]} | {headings[3]} |",
+                "| --- | --- | --- |",
+            ]
+        )
+        for task, label in tasks.items():
+            if task in {"questions", "summary"} and not plan.get("generate_" + task):
+                continue
+            binding = plan[task]
+            lines.append(f"| {label} | {_safe(binding['provider'])} | {_safe(binding['model'])} |")
+        lines.append("")
     category_scores: dict[str, list[float]] = {}
     for index, question in enumerate(run["questions"], 1):
         evaluation = evaluations.get(index, {})
@@ -215,15 +277,31 @@ def render_report(run: dict[str, Any]) -> str:
         averages = {name: sum(values) / len(values) for name, values in category_scores.items()}
         best = max(averages, key=lambda name: averages[name])
         weakest = min(averages, key=lambda name: averages[name])
-        lines.extend(
-            [
-                f"## {overall}",
-                "",
-                f"{strongest} **{detail['categories'].get(best, best)}** ({averages[best]:.1f}/100).",
-                f"{next_area} **{detail['categories'].get(weakest, weakest)}** ({averages[weakest]:.1f}/100).",
-                "",
-            ]
-        )
+        if len(set(averages.values())) == 1:
+            tie = {
+                "en": "Assessed topics have the same average. Use the per-answer feedback to choose your next practice priority.",
+                "ja": "評価済み分野の平均は同じです。回答ごとの助言から次の練習課題を選んでください。",
+                "zh-Hant": "已評估主題的平均分數相同。請根據逐題回饋選擇下一個練習重點。",
+            }[locale]
+            lines.extend([f"## {overall}", "", tie, ""])
+        else:
+            lines.extend(
+                [
+                    f"## {overall}",
+                    "",
+                    f"{strongest} **{detail['categories'].get(best, best)}** ({averages[best]:.1f}/100).",
+                    f"{next_area} **{detail['categories'].get(weakest, weakest)}** ({averages[weakest]:.1f}/100).",
+                    "",
+                ]
+            )
+    if category_scores:
+        heading = {"en": "Topic scores", "ja": "分野別スコア", "zh-Hant": "主題分數"}[locale]
+        lines.extend([f"### {heading}", "", f"| {detail['category']} | {detail['score']} |", "| --- | --- |"])
+        for category, values in category_scores.items():
+            lines.append(
+                f"| {detail['categories'][category]} | {sum(values) / len(values):.1f}/100 ({len(values)}/2) |"
+            )
+        lines.append("")
     for index, question in enumerate(run["questions"], 1):
         answer = answers.get(index)
         evaluation = evaluations.get(index)
@@ -295,13 +373,14 @@ def render_report(run: dict[str, Any]) -> str:
             )
         provenance = evaluation.get("provenance")
         if provenance:
+            identity = (
+                f"{provenance['gguf_file']} ({provenance['gguf_sha256']})"
+                if "gguf_file" in provenance
+                else f"{provenance.get('provider', 'unknown')} / {provenance.get('returned_model', provenance.get('requested_model', 'unknown'))}"
+            )
             lines.extend(
                 [
-                    (
-                        f"{flow_labels[6]}: {_safe(provenance['gguf_file'])} "
-                        f"(`{_safe(provenance['gguf_sha256'])}`); "
-                        f"`{_safe(provenance['rubric_version'])}`."
-                    ),
+                    (f"{flow_labels[6]}: {_safe(identity)}; `{_safe(provenance['rubric_version'])}`."),
                     "",
                 ]
             )
@@ -321,6 +400,19 @@ def render_report(run: dict[str, Any]) -> str:
                     "",
                 ]
             )
+            if coaching.get("provenance"):
+                identity = coaching["provenance"]
+                name = identity.get(
+                    "gguf_file", identity.get("returned_model", identity.get("requested_model", "unknown"))
+                )
+                lines.extend(
+                    [
+                        f"{flow_labels[6]} ({why}): {_safe(identity.get('provider', 'local'))} / {_safe(name)}",
+                        "",
+                    ]
+                )
         elif evaluation.get("coaching_error"):
             lines.extend([coaching_unavailable, ""])
+    if run.get("summary"):
+        lines.extend(["", f"## {overall}", "", _safe(run["summary"])])
     return "\n".join(lines).rstrip() + "\n"

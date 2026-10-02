@@ -14,13 +14,16 @@ def test_adaptive_question_comes_from_current_evidence_bank_and_survives_replay(
         snapshot = engine.wiki.snapshot("example/engineer")
         questions = make_fixed_questions(snapshot, "en")
         questions[1] = replace(
-            questions[1], text="Tell me about your Python migration project and what you learned."
+            questions[1],
+            localization_version="question-localization-v1",
+            text="Tell me about your Python migration project and what you learned.",
         )
         prior = engine.store.create_run("example/engineer", "en", snapshot, questions)
         first = engine.store.present(prior, 1)
         engine.store.acknowledge_presentation(prior, 1, first["event_id"])
         engine.store.submit(prior, 1, "prior-one", "I led a Python migration project.")
-        engine.store.present(prior, 2)
+        second = engine.store.present(prior, 2)
+        engine.store.acknowledge_presentation(prior, 2, second["event_id"])
         with engine.store.connect() as db:
             db.execute("UPDATE runs SET status='answered' WHERE run_id=?", (prior,))
 
@@ -30,7 +33,7 @@ def test_adaptive_question_comes_from_current_evidence_bank_and_survives_replay(
         next_turn = await engine.submit(run_id, 1, "I worked on a Python migration project.", "current-one")
         assert "Python migration project" in next_turn["question"]["text"]
         run = engine.store.get_run(run_id)
-        assert run["selection_decisions"][2]["policy_version"] == "bounded-bank-v1"
+        assert run["selection_decisions"][2]["policy_version"] == "bounded-bank-v2-cjk"
         assert run["selection_decisions"][2]["candidate_count"] >= 2
         replay = await engine.state(run_id)
         assert replay["question"]["event_id"] == next_turn["question"]["event_id"]

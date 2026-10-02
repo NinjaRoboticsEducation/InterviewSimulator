@@ -139,8 +139,9 @@ def test_score_survives_cancelled_coaching_and_report_revisions(tmp_path):
         assert await engine.evaluate(run_id) == report
         revision = report.with_name("report-r12.md")
         revision.write_text("older content")
-        assert engine.latest_report(run_id) == revision
-        assert (await engine.evaluate(run_id)).name == "report-r13.md"
+        assert engine.latest_report(run_id) == report  # an orphan is never a committed export
+        assert await engine.evaluate(run_id) == report
+        assert revision.read_text() == "older content"
         report.with_name("report-r99.md").symlink_to(report)
         with pytest.raises(ValueError, match="Symbolic"):
             engine.latest_report(run_id)
@@ -156,6 +157,12 @@ def test_local_adk_uses_isolated_http_transport(monkeypatch, tmp_path):
 
     def reply(request):
         requests.append(request)
+        if request.url.path == "/props":
+            return httpx.Response(200, json={"default_generation_settings": {"n_ctx": 4096}})
+        if request.url.path == "/apply-template":
+            return httpx.Response(200, json={"prompt": "Rendered synthetic template"})
+        if request.url.path == "/tokenize":
+            return httpx.Response(200, json={"tokens": [1] * 30})
         assert str(request.url) == "http://127.0.0.1:8081/v1/chat/completions"
         return httpx.Response(
             200,
@@ -184,7 +191,7 @@ def test_local_adk_uses_isolated_http_transport(monkeypatch, tmp_path):
     monkeypatch.setattr(httpx, "AsyncClient", client)
     adapter = LocalAdk(Settings(tmp_path, tmp_path, tmp_path / "state"))
     assert '"ok"' in asyncio.run(adapter._run_agent("test_assessor", "Return JSON", {"answer": "synthetic"}))
-    assert len(requests) == 1
+    assert len(requests) == 4
 
 
 def test_report_escapes_active_content():

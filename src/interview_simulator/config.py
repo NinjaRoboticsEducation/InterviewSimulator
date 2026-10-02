@@ -33,6 +33,23 @@ class Settings:
     @classmethod
     def load(cls, root: Path | None = None) -> Settings:
         project = (root or Path(__file__).resolve().parents[2]).resolve()
+        from dotenv import load_dotenv
+
+        # Load only this copy's private settings; shell overrides remain authoritative.
+        load_dotenv(project / ".env", override=False)
+        native_bins = [
+            project / ".native" / tool / "build" / "bin" / child
+            for tool in ("llama-server", "whisper-cli")
+            for child in ("", "Release")
+        ]
+        available = [
+            str(p)
+            for p in native_bins
+            if p.is_dir() and not any(parent.is_symlink() for parent in (p, *p.parents))
+        ]
+        if available:
+            current = os.environ.get("PATH", "").split(os.pathsep)
+            os.environ["PATH"] = os.pathsep.join(dict.fromkeys([*available, *current]))
         wiki = project / "InterviewWiki"
         if not (wiki / "interviewwiki.yaml").is_file():
             raise FileNotFoundError(f"InterviewWiki configuration is missing: {wiki}")

@@ -197,17 +197,85 @@ def delete_run(settings: Settings, run_id: str) -> None:
 
         async def remove_session():
             service = InterviewFlow(settings)._service()
-            session = await service.get_session(
-                app_name="interview_simulator", user_id="local", session_id=run_id
-            )
-            if session is not None:
-                await service.delete_session(
+            try:
+                session = await service.get_session(
                     app_name="interview_simulator", user_id="local", session_id=run_id
                 )
+                if session is not None:
+                    await service.delete_session(
+                        app_name="interview_simulator", user_id="local", session_id=run_id
+                    )
+            finally:
+                await service.db_engine.dispose()
 
         asyncio.run(remove_session())
         if folder.exists():
             shutil.rmtree(folder)
+
+
+def clear_history(settings: Settings) -> dict:
+    """Clear this installation's interviews under its stopped-server lease."""
+    with _lease(settings):
+        store = Store(settings.state_root / "question-bank.sqlite")
+        wiki = WikiAdapter(settings.wiki_root)
+        with store.connect() as db:
+            runs = db.execute("SELECT run_id, opportunity FROM runs").fetchall()
+        folders = {wiki.simulation_dir(row["opportunity"], row["run_id"]) for row in runs}
+        folders.update((settings.wiki_root / "Output").glob("*/*/Simulations/*"))
+        caches = [settings.state_root / "translation-cache", settings.root / "agents/interview_practice/.adk"]
+        backups = [
+            path
+            for pattern in ("question-bank*.sqlite*", "adk-sessions*.sqlite*")
+            for path in settings.state_root.rglob(pattern)
+            if path.parent != settings.state_root or path.name.startswith("question-bank.pre-")
+        ]
+        for path in [*folders, *caches, *backups]:
+            reject_links(path)
+            if path.is_dir():
+                for child in path.rglob("*"):
+                    reject_links(child)
+        adk = settings.state_root / "adk-sessions.sqlite"
+        reject_links(adk)
+        # Finish path checks before deleting any history; sources/settings are not in this inventory.
+        with store.connect() as db:
+            db.execute("PRAGMA secure_delete=ON")
+            for table in (
+                "recovery_grants",
+                "tasks",
+                "assessment_revisions",
+                "model_attempts",
+                "answer_versions",
+                "selection_decisions",
+                "recognitions",
+                "evaluations",
+                "answers",
+                "presentations",
+                "concept_versions",
+                "question_concepts",
+                "question_versions",
+                "runs",
+            ):
+                db.execute(f"DELETE FROM {table}")
+        if adk.exists():
+            with sqlite3.connect(adk) as db:
+                db.execute("PRAGMA secure_delete=ON")
+                for table in ("events", "sessions", "app_states", "user_states"):
+                    db.execute(f"DELETE FROM {table}")
+        for database in (settings.state_root / "question-bank.sqlite", adk):
+            if database.exists():
+                with sqlite3.connect(database) as db:
+                    db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                    db.execute("VACUUM")
+        for path in [*folders, *caches, *backups]:
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink(missing_ok=True)
+        return {
+            "runs_removed": len(runs),
+            "simulation_folders_removed": len(folders),
+            "history_backups_removed": len(backups),
+        }
 
 
 def verify_run(settings: Settings, run_id: str) -> dict[str, object]:

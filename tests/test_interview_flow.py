@@ -115,7 +115,8 @@ def test_complete_report_preserves_scores_and_creates_new_job_run(tmp_path):
         report = path.read_text(encoding="utf-8")
         assert "75.0/100" in report
         assert report.count("**Example answer:**") == 10
-        assert report.count("## ") == 11
+        assert sum(line.startswith("## ") for line in report.splitlines()) == 11
+        assert all(f"## {ordinal}." in report for ordinal in range(1, 11))
         manifest = json.loads((path.parent / "simulation-manifest.json").read_text(encoding="utf-8"))
         assert manifest["status"] == "complete"
         another = await engine.start("example/engineer", "en")

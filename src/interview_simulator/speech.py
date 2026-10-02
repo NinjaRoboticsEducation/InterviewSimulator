@@ -1,13 +1,45 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
 import wave
+from functools import lru_cache
 from pathlib import Path
 
+from .local_voices import asset_path, jtalk_ready, speak_jtalk, windows_call, windows_voice
+from .processes import run as run_process
+
 LANGUAGE = {"en": "en", "ja": "ja", "zh-Hant": "zh"}
+
+
+@lru_cache(maxsize=1)
+def installed_voices() -> dict[str, str]:
+    if not shutil.which("say"):
+        return {}
+    try:
+        result = run_process(["say", "-v", "?"], capture_output=True, text=True, check=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    return {
+        match[1].strip(): match[2]
+        for line in result.stdout.splitlines()
+        if (match := re.match(r"^(.+?)\s+([a-z]{2}_[A-Z]{2})\s+#", line))
+    }
+
+
+def selected_voice(locale: str) -> str | None:
+    configured = os.environ.get(f"INTERVIEW_SIMULATOR_VOICE_{locale.replace('-', '_').upper()}")
+    if configured:
+        return configured
+    voices = installed_voices()
+    preferred = {"en": ("Samantha", "en_US"), "ja": ("Kyoko", "ja_JP"), "zh-Hant": ("Meijia", "zh_TW")}
+    name, language = preferred[locale]
+    if name in voices:
+        return name
+    return next((voice for voice, tag in voices.items() if tag == language), None)
 
 
 class Speech:
@@ -15,53 +47,59 @@ class Speech:
 
     def __init__(self, model_path: Path | None = None):
         configured = os.environ.get("INTERVIEW_SIMULATOR_WHISPER_MODEL")
-        self.model_path = model_path or (Path(configured) if configured else None)
+        root = Path(__file__).resolve().parents[2]
+        configured_path = root / Path(configured).expanduser() if configured else None
+        default = root / "models/whisper/ggml-small.bin"
+        self.model_path = model_path or configured_path or (default if default.is_file() else None)
 
     def capabilities(self) -> dict[str, object]:
-        voices = {
-            locale: os.environ.get(f"INTERVIEW_SIMULATOR_VOICE_{locale.replace('-', '_').upper()}")
-            for locale in LANGUAGE
-        }
+        voices = {locale: selected_voice(locale) for locale in LANGUAGE}
         piper_models = {
-            locale: os.environ.get(f"INTERVIEW_SIMULATOR_PIPER_MODEL_{locale.replace('-', '_').upper()}")
+            locale: asset_path(
+                os.environ.get(f"INTERVIEW_SIMULATOR_PIPER_MODEL_{locale.replace('-', '_').upper()}")
+            )
             for locale in LANGUAGE
         }
-        status = {
+        windows_voices = {locale: windows_voice(locale) for locale in LANGUAGE}
+        status: dict[str, object] = {
             "ffmpeg": bool(shutil.which("ffmpeg")),
             "whisper_cli": bool(shutil.which("whisper-cli")),
             "whisper_model": bool(self.model_path and self.model_path.is_file()),
             "mac_say": bool(shutil.which("say")),
             "piper": bool(shutil.which("piper")),
             "configured_voices": voices,
-            "configured_piper_models": piper_models,
+            "configured_piper_models": {
+                locale: str(value) if value else None for locale, value in piper_models.items()
+            },
+            "windows_voices": windows_voices,
+            "open_jtalk_ready": jtalk_ready(),
         }
         status["asr_ready"] = bool(status["ffmpeg"] and status["whisper_cli"] and status["whisper_model"])
         status["mac_tts_ready"] = bool(status["ffmpeg"] and status["mac_say"] and all(voices.values()))
         status["piper_tts_ready"] = bool(
             status["piper"]
             and all(
-                value and Path(value).is_file() and Path(value + ".json").is_file()
+                value and Path(value).is_file() and Path(str(value) + ".json").is_file()
                 for value in piper_models.values()
             )
         )
-        backend = os.environ.get("INTERVIEW_SIMULATOR_TTS_BACKEND", "auto")
         by_language = {}
         for locale in LANGUAGE:
+            backend = self.backend(locale)
             mac_ready = bool(status["ffmpeg"] and status["mac_say"] and voices[locale])
             model = piper_models[locale]
             piper_ready = bool(
-                status["piper"] and model and Path(model).is_file() and Path(model + ".json").is_file()
+                status["piper"] and model and model.is_file() and Path(str(model) + ".json").is_file()
             )
-            by_language[locale] = (
-                mac_ready
-                if backend == "say"
-                else piper_ready
-                if backend == "piper"
-                else (mac_ready or piper_ready)
-                if backend == "auto"
-                else False
-            )
-        status["tts_backend"] = backend
+            windows_ready = bool(windows_voices[locale])
+            japanese_ready = locale == "ja" and jtalk_ready()
+            options = {
+                "say": mac_ready,
+                "piper": piper_ready,
+                "windows": windows_ready,
+                "open-jtalk": japanese_ready,
+            }
+            by_language[locale] = any(options.values()) if backend == "auto" else options.get(backend, False)
         status["tts_by_language"] = by_language
         status["tts_ready"] = all(by_language.values())
         return status
@@ -78,7 +116,7 @@ class Speech:
             source = root / "answer.webm"
             wav = root / "answer.wav"
             source.write_bytes(audio)
-            subprocess.run(
+            run_process(
                 [
                     "ffmpeg",
                     "-nostdin",
@@ -106,7 +144,7 @@ class Speech:
             with wave.open(str(wav), "rb") as decoded:
                 if decoded.getnframes() / decoded.getframerate() > 180:
                     raise ValueError("Recording exceeds three minutes; shorten it or enter a typed answer")
-            subprocess.run(
+            run_process(
                 [
                     "whisper-cli",
                     "-m",
@@ -135,14 +173,39 @@ class Speech:
                 transcript = OpenCC("s2twp").convert(transcript)
             return transcript
 
+    @staticmethod
+    def backend(locale: str) -> str:
+        return os.environ.get(
+            "INTERVIEW_SIMULATOR_TTS_BACKEND_" + locale.replace("-", "_").upper(),
+            os.environ.get("INTERVIEW_SIMULATOR_TTS_BACKEND", "auto"),
+        )
+
     def speak(self, text: str, locale: str) -> bytes:
         if locale not in LANGUAGE or not 0 < len(text) <= 3000:
             raise ValueError("Unsupported language or utterance size")
-        backend = os.environ.get("INTERVIEW_SIMULATOR_TTS_BACKEND", "auto")
-        if backend not in {"auto", "say", "piper"}:
-            raise ValueError("TTS backend must be auto, say, or piper")
-        voice = os.environ.get(f"INTERVIEW_SIMULATOR_VOICE_{locale.replace('-', '_').upper()}")
-        piper_model = os.environ.get(f"INTERVIEW_SIMULATOR_PIPER_MODEL_{locale.replace('-', '_').upper()}")
+        backend = self.backend(locale)
+        if backend not in {"auto", "say", "piper", "windows", "open-jtalk"}:
+            raise ValueError("Choose auto, say, piper, windows, or open-jtalk for local speech")
+        if backend == "windows" or (backend == "auto" and windows_voice(locale)):
+            voice_name = windows_voice(locale)
+            if not voice_name:
+                raise RuntimeError(f"Install a System.Speech voice for {locale}; run the local voice check")
+            with tempfile.TemporaryDirectory(prefix="interview-voice-") as directory:
+                wav = Path(directory) / "question.wav"
+                windows_call({"action": "speak", "voice": voice_name, "output": str(wav), "text": text})
+                return wav.read_bytes()
+        if backend == "open-jtalk" or (backend == "auto" and locale == "ja" and jtalk_ready()):
+            if locale != "ja":
+                raise ValueError("Open JTalk is configured only for Japanese")
+            with tempfile.TemporaryDirectory(prefix="interview-voice-") as directory:
+                wav = Path(directory) / "question.wav"
+                speak_jtalk(text, wav)
+                return wav.read_bytes()
+        voice = selected_voice(locale)
+        piper_asset = asset_path(
+            os.environ.get(f"INTERVIEW_SIMULATOR_PIPER_MODEL_{locale.replace('-', '_').upper()}")
+        )
+        piper_model = str(piper_asset) if piper_asset else None
         use_say = backend == "say" or (backend == "auto" and voice and shutil.which("say"))
         if not use_say:
             if (
@@ -155,7 +218,7 @@ class Speech:
                 raise RuntimeError("Install the local Piper command before speech playback")
             with tempfile.TemporaryDirectory(prefix="interview-voice-") as directory:
                 wav = Path(directory) / "question.wav"
-                subprocess.run(
+                run_process(
                     ["piper", "--model", piper_model, "--output_file", str(wav)],
                     input=" ".join(text.splitlines()),
                     text=True,
@@ -169,7 +232,7 @@ class Speech:
         with tempfile.TemporaryDirectory(prefix="interview-voice-") as directory:
             aiff = Path(directory) / "question.aiff"
             wav = Path(directory) / "question.wav"
-            subprocess.run(
+            run_process(
                 ["say", "-v", voice, "-o", str(aiff)],
                 input=text,
                 text=True,
@@ -177,7 +240,7 @@ class Speech:
                 capture_output=True,
                 timeout=45,
             )
-            subprocess.run(
+            run_process(
                 [
                     "ffmpeg",
                     "-nostdin",

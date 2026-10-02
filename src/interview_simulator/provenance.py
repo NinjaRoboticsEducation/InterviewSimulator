@@ -38,14 +38,25 @@ async def model_identity(settings: Settings) -> dict[str, Any]:
     advertised = props.get("model_path")
     if not isinstance(advertised, str) or not Path(advertised).is_file():
         raise ValueError("llama.cpp did not disclose a local model_path in /props")
-    if not Path(advertised).samefile(path):
-        raise ValueError("The loaded llama.cpp model differs from INTERVIEW_SIMULATOR_GGUF")
+    advertised_path = Path(advertised)
+    reject_links(advertised_path)
     stat = path.stat()
     signature = (stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
     digest = await asyncio.to_thread(_digest, path, signature)
+    if not advertised_path.samefile(path):
+        loaded_stat = advertised_path.stat()
+        loaded_signature = (
+            loaded_stat.st_ino,
+            loaded_stat.st_size,
+            loaded_stat.st_mtime_ns,
+            loaded_stat.st_ctime_ns,
+        )
+        loaded_digest = await asyncio.to_thread(_digest, advertised_path, loaded_signature)
+        if loaded_digest != digest:
+            raise ValueError("The loaded llama.cpp model differs from INTERVIEW_SIMULATOR_GGUF")
     return {
         "model_alias": settings.model_name,
         "gguf_file": path.name,
         "gguf_sha256": digest,
-        "source": "llama.cpp /props model_path matched the configured local file",
+        "source": "llama.cpp /props loaded file fingerprint matched the configured local file",
     }
