@@ -426,7 +426,18 @@ def test_ollama_qualification_requires_all_tasks_and_rejects_invention(
         if schema == COACHING_SCHEMA:
             return json.dumps(
                 {
-                    "example_clauses": [{"text": payload["answer"], "kind": "fact", "fact_ids": ["f"]}],
+                    "example_clauses": [
+                        {"text": payload["answer"], "kind": "fact", "fact_ids": ["f"]},
+                        {
+                            "text": {
+                                "en": "I am interested in discussing this contribution.",
+                                "ja": "この貢献についてお話ししたいです。",
+                                "zh-Hant": "我有興趣分享這項貢獻。",
+                            }[locale],
+                            "kind": "motivation",
+                            "fact_ids": [],
+                        },
+                    ],
                     "fact_ids": ["f"],
                     "why_it_works": wording,
                     "outline": wording,

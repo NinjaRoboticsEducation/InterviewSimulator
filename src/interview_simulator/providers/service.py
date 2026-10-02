@@ -374,16 +374,18 @@ class ProviderService:
             raw = parse_json_object(
                 await self.generate(
                     test,
-                    "Coach this fictional candidate. Write all prose in locale. Use exactly one example clause: "
+                    "Coach this fictional candidate. Write all prose in locale. Use two example clauses. First: "
                     "kind=fact, fact_ids=[f], a minimal first-person paraphrase of confirmed fact f. "
                     "Do not infer outcomes, leadership, improvements or other achievements from doing the task. "
-                    "No prospective clause is needed. Top-level fact_ids=[f]. Keep why_it_works, outline and "
+                    "Add one motivation clause with empty fact_ids expressing interest in discussing this contribution, without inventing past values or achievements. Top-level fact_ids=[f]. Keep why_it_works, outline and "
                     "next_action to one brief sentence each; advice may suggest future verification but no past claims.",
                     prompt,
                     COACHING_SCHEMA,
                 )
             )
             validate_coaching(raw, {"f": answer}, {"category": "portfolio", "locale": locale})
+            if not {"fact", "motivation"} <= {c["kind"] for c in raw.get("example_clauses", [])}:
+                raise ValueError("Ollama qualification requires supported experience and natural intent")
             checked()
         for locale in ("ja", "zh-Hant"):
             schema = {

@@ -406,7 +406,7 @@ def test_generated_deck_summary_and_exports_through_real_adk(tmp_path):
                 "next_action": "Verify an outcome before including it.",
             }
         elif "Audit the proposed" in instruction:
-            raw = {"supported": True}
+            raw = {"supported": True, "reason": "OK", "clause_indices": []}
         else:
             raw = {"priorities": [1, 7, 9]}
         return httpx.Response(

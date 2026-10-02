@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .adk_runtime import InterviewFlow, LocalAdk
+from .coaching import CONTRACT_VERSION, evidence_packet, has_example
 from .config import Settings
 from .coordination import serialized
 from .errors import safe_failure
@@ -408,7 +409,7 @@ class InterviewEngine:
         for answer in run["answers"]:
             ordinal = int(answer["ordinal"])
             existing = run["evaluations"].get(ordinal)
-            if existing and "score" in existing and (answer["skipped"] or "coaching" in existing):
+            if existing and "score" in existing and has_example(existing.get("coaching")):
                 continue
             question = {**run["questions"][ordinal - 1], "ordinal": ordinal}
             if existing and "score" in existing:
@@ -442,14 +443,15 @@ class InterviewEngine:
                         self.store.report_failure(run_id, failure)
                         self.store.save_evaluation(run_id, ordinal, result)
                         break
-            if "score" in result and not answer["skipped"] and "coaching" not in result:
+            if "score" in result and not has_example(result.get("coaching")):
                 self.store.save_evaluation(run_id, ordinal, result)
-                selected = question["fact_ids"] or tuple(facts)[:3]
-                cited = {fid: facts[fid] for fid in selected if fid in facts}
+                cited, coach_question = evidence_packet(run["snapshot"], question, facts)
                 try:
                     coaching = await self._model_call(
-                        assessor.coach, question, answer["text"], cited, copy.deepcopy(result)
+                        assessor.coach, coach_question, answer["text"], cited, copy.deepcopy(result)
                     )
+                    if not has_example(coaching):
+                        raise ValueError("Coaching requires a complete non-empty example and practice advice")
                     scored_model = result.get("provenance", {}).get("gguf_sha256")
                     coached_model = coaching.get("provenance", {}).get("gguf_sha256")
                     plan = run.get("report_options") or run["snapshot"].get("model_plan", {})
@@ -461,9 +463,11 @@ class InterviewEngine:
                         raise ValueError("Loaded model differs from the saved assessment")
                     result["coaching"] = coaching
                     result.pop("coaching_error", None)
+                    result.pop("coaching_failure", None)
                 except Exception as exc:  # noqa: BLE001 - coaching failure must not revise the score
                     failure = safe_failure(exc)
                     result["coaching_error"] = failure["message"]
+                    result["coaching_failure"] = failure
                     if isinstance(exc, ProviderError):
                         if exc.code == "RATE_LIMITED" and exc.retry_after is None:
                             failure["retry_at"] = time.time() + 60
@@ -478,8 +482,7 @@ class InterviewEngine:
             "score" in item for item in run["evaluations"].values()
         )
         coached_all = scored_all and all(
-            answer["skipped"] or "coaching" in run["evaluations"][answer["ordinal"]]
-            for answer in run["answers"]
+            has_example(run["evaluations"][answer["ordinal"]].get("coaching")) for answer in run["answers"]
         )
         summary_complete = True
         if isinstance(assessor, LocalAdk) and assessor.plan.generate_summary:
@@ -528,6 +531,7 @@ class InterviewEngine:
         files = [folder / "input-snapshot.json", run_export, report_path]
         manifest = {
             "schema_version": 1,
+            "example_contract": CONTRACT_VERSION,
             "assessment_version": run["assessment_version"],
             "run_id": run_id,
             "opportunity": run["opportunity"],

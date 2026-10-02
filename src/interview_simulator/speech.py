@@ -105,6 +105,14 @@ class Speech:
         return status
 
     def transcribe(self, audio: bytes, locale: str) -> str:
+        return self._transcribe(audio, locale, clip=False)[0]
+
+    def transcribe_segment(self, audio: bytes, locale: str) -> dict:
+        text, limited = self._transcribe(audio, locale, clip=True)
+        return {"text": text, "limited": limited, "limit_seconds": 180}
+
+    def _transcribe(self, audio: bytes, locale: str, *, clip: bool) -> tuple[str, bool]:
+        limited = False
         if locale not in LANGUAGE or not 0 < len(audio) <= 20_000_000:
             raise ValueError("Unsupported language or recording size")
         if not self.model_path or not self.model_path.is_file():
@@ -143,7 +151,17 @@ class Speech:
             )
             with wave.open(str(wav), "rb") as decoded:
                 if decoded.getnframes() / decoded.getframerate() > 180:
-                    raise ValueError("Recording exceeds three minutes; shorten it or enter a typed answer")
+                    if not clip:
+                        raise ValueError(
+                            "Recording exceeds three minutes; shorten it or enter a typed answer"
+                        )
+                    limited = True
+                    params = decoded.getparams()
+                    frames = decoded.readframes(180 * decoded.getframerate())
+            if limited:
+                with wave.open(str(wav), "wb") as trimmed:
+                    trimmed.setparams(params)
+                    trimmed.writeframes(frames)
             run_process(
                 [
                     "whisper-cli",
@@ -171,7 +189,7 @@ class Speech:
                 from opencc import OpenCC
 
                 transcript = OpenCC("s2twp").convert(transcript)
-            return transcript
+            return transcript, limited
 
     @staticmethod
     def backend(locale: str) -> str:

@@ -17,7 +17,7 @@ from ..files import reject_links
 from .base import Binding, ProviderError
 from .credentials import save_private_json
 
-QUALIFICATION_VERSION = "ollama-tasks-v2"
+QUALIFICATION_VERSION = "ollama-tasks-v3"
 
 
 class ConnectionRequest(BaseModel):

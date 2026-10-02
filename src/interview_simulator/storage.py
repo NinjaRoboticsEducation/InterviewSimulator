@@ -752,8 +752,16 @@ class Store:
             if existing:
                 previous = json.loads(existing[0])
                 if "score" in previous:
-                    original = {k: v for k, v in previous.items() if k not in {"coaching", "coaching_error"}}
-                    proposed = {k: v for k, v in payload.items() if k not in {"coaching", "coaching_error"}}
+                    original = {
+                        k: v
+                        for k, v in previous.items()
+                        if k not in {"coaching", "coaching_error", "coaching_failure"}
+                    }
+                    proposed = {
+                        k: v
+                        for k, v in payload.items()
+                        if k not in {"coaching", "coaching_error", "coaching_failure"}
+                    }
                     if original != proposed:
                         raise ValueError("A saved assessment cannot be revised")
                     if "coaching" in previous:

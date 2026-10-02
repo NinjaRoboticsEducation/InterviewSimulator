@@ -204,14 +204,15 @@ From the root:
 uv run interview-simulator serve
 ```
 
-Open [http://127.0.0.1:8765](http://127.0.0.1:8765) in Safari, Chrome, or Edge. The six steps guide you through connection, models, job readiness, interview, answer review, and report.
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765) in Safari, Chrome, or Edge. The six steps guide you from Get started through model/job selection, interview practice, answer review, and your report.
 
-1. **Connection:** Local is selected by default. For Google, OpenAI, or Anthropic, enter the key directly into the password field. The app discovers models available to that account. By default the key stays only in the running server's memory. Select “Remember on this device” only if you want the operating system's credential vault to store it. Never put cloud keys into chat, a report, or a Git commit.
-2. **Models:** Choose one text model, or open advanced settings to assign different models to question preparation, assessment, coaching, and summary. Optional generated variants and summary are off by default. Unknown models need a synthetic structured-output check; a successful check confirms the response format, not interview quality. Test requests may incur API charges.
-3. **Job:** Choose a ready opportunity and a language. Review voice readiness and the provider disclosure. Cloud text requires explicit consent. Missing voice setup still allows typed answers.
-4. **Interview:** Play the greeting or question; record one answer or type it. Correct the transcript before confirming. Progress shows the question number and saved answers. Previous question and Review answers let you revisit confirmed answers. Pause interview saves the run and keeps you in the interview workspace; Resume practice continues it. Connection, Models, and Job settings stay locked until you cancel or finish the interview. Cancel preserves the history; Restart prepares a new run.
-5. **Review:** Correct earlier answers before generating the report. Edits preserve original versions and the already selected question sequence. Saving from another tab with an outdated revision is rejected so it cannot overwrite newer work.
-6. **Report:** Generating the report locks the final answers. The browser shows formatted feedback, topic and rubric score bars, strengths, and practice priorities. You can download Markdown or standalone HTML, or print. Stop report work saves completed scores; resuming finishes missing work without recalculating them.
+1. **Get started:** Choose your interface language and read the short introduction. Continue to Select Model.
+2. **Select Model:** Local is selected by default. For Google, OpenAI, or Anthropic, enter the key directly into the password field. The app discovers models available to that account. By default the key stays only in the running server's memory. Select “Remember on this device” only if you want the operating system's credential vault to store it. Never put cloud keys into chat, a report, or a Git commit.
+   **Model settings:** Choose one text model, or open advanced settings to assign different models to question preparation, assessment, coaching, and summary. Optional generated variants and summary are off by default. Unknown models need a synthetic structured-output check; a successful check confirms the response format, not interview quality. Test requests may incur API charges.
+3. **Select Job Interview:** Choose a ready opportunity and a language. Review voice readiness and the provider disclosure. Cloud text requires explicit consent. Missing voice setup still allows typed answers.
+4. **Start Interview:** Play the greeting or question; record one answer or type it. Correct the transcript before confirming. Progress shows the question number and saved answers. Previous question and Review answers let you revisit confirmed answers. Pause interview saves the run and keeps you in the interview workspace; Resume practice continues it. Get started, Select Model, and Select Job Interview stay locked until you cancel or finish the interview. Cancel preserves the history; Restart prepares a new run.
+5. **Review your answers:** Correct earlier answers before generating the report. Edits preserve original versions and the already selected question sequence. Saving from another tab with an outdated revision is rejected so it cannot overwrite newer work.
+6. **Interview report:** Generating the report locks the final answers. The browser shows formatted feedback, topic and rubric score bars, strengths, and practice priorities. You can download Markdown or standalone HTML, or print. Stop report work saves completed scores; resuming finishes missing work without recalculating them.
 
 Fixed practice begins with self-introduction, then moves through experience, professional judgment, portfolio, role, and company. Adaptive practice selects from questions previously asked for **the same job and current evidence**, within the required topic slots. It uses a bounded matching policy, including Japanese/Chinese character pairs; it is not model fine-tuning. Sparse banks fall back to the fixed route. Optional question preparation uses an ADK model to choose evidence and focus; trusted language templates assemble the question so it cannot invent a career premise.
 
@@ -263,16 +264,16 @@ ADK Web is a **typed development chat interface**. The guided microphone and loc
 
 ### Step 7 — Review, repeat, and move your data
 
-**Interface language** changes buttons and messages. Choose it on the Connection landing page; it is hidden and fixed while an interview is open. **Interview language** selects questions, speech, coaching, and the report; it stays fixed for that run. Changing the interface language never translates saved answers.
+**Interface language** changes buttons and messages. Choose it on the Get started landing page; it is hidden and fixed while an interview is open. **Interview language** selects questions, speech, coaching, and the report; it stays fixed for that run. Changing the interface language never translates saved answers.
 
 Reloading or restarting opens the connection screen. Under **Job & readiness → Saved interviews**, explicitly choose **Resume** for unfinished practice. Cancelled interviews are history only. Failed preparation offers **Retry preparation** or **Use native fixed questions**; the latter omits untranslated profile excerpts and explains its reduced personalization.
 
-If a provider reaches a quota or rate limit, report work pauses. The partial report keeps completed scores. Wait for the displayed delay, check the provider account, and choose **Resume unfinished report**. **Allow 12 more attempts** adds a bounded recovery allowance after review. **New assessment with current model settings** creates a separate scoring revision with the same locked answers; earlier report files and scores remain available. Review cloud consent when changing providers. Cloud requests can be billed even after a timeout.
+If a provider reaches a quota or rate limit, report work pauses. The partial report keeps completed scores. Wait for the displayed delay, check the provider account, and choose **Resume unfinished report**. Advanced recovery is available through the terminal commands below, or the ADK chat commands `allowance` and `revise-report`. These controls are intentionally absent from the built-in web interface. A new assessment uses the same locked answers and keeps previous scores and report files. Review cloud consent when changing providers. Cloud requests can be billed even after a timeout.
 
 ### Use Ollama
 
 1. Install Ollama from its [official website](https://ollama.com/download) for inference on your computer. Direct official-cloud access does not require a local daemon (the model server).
-2. On **Connection**, choose **Ollama**. Select **Own computer**, normally `http://127.0.0.1:11434`, or **Official cloud**, fixed to `https://ollama.com`. Arbitrary remote and private-network servers are outside this version.
+2. On **Select Model**, choose **Ollama**. Select **Own computer**, normally `http://127.0.0.1:11434`, or **Official cloud**, fixed to `https://ollama.com`. Arbitrary remote and private-network servers are outside this version.
 3. Install your preferred Qwen3.5 model through Ollama and verify its quantization (compressed model format). Qwen3.5-9B Q4_K_M remains the quality preference; 4B Q4_K_M is the explicit speed alternative. The app records the discovered model digest (identity) and quantization; a model name alone does not guarantee either.
 4. A local key is optional. Official-cloud access needs a key. Keys stay in server memory unless you select the operating system's credential vault. For cloud models accessed through a local daemon, run `ollama signin` in your terminal first (entering a key in the app does not sign in the local daemon); text still leaves your computer and requires consent.
 5. Connect, choose a discovered model, and select **Test model**. For Ollama this runs nine fictional checks covering multilingual tasks and rejection of an invented achievement; cloud checks may incur charges. Local output uses an enforced JSON schema (defined data format); cloud output is validated by the application. A cloud model that fails qualification stays blocked. The app checks locality again before generating text. Leave reasoning at **Provider default** unless the model explicitly supports the selected level. The check displays progress out of nine and has a **Stop model test** button. Leaving the page cancels the check; a lost connection stops it after 45 seconds without a status check, and every check has a ten-minute limit.
@@ -375,7 +376,7 @@ This is a controlled workflow with separate specialist model tasks. Ordinary Pyt
 | Loaded model differs from configured GGUF | Use the same file for `.env` and llama.cpp. Keep the scoring model unchanged within a run. Start a fresh run after switching models. |
 | Voice buttons disabled or silent | Run `doctor` and actual `voice-test` samples. Verify FFmpeg, whisper-cli, multilingual small, and the selected local voice. Restart after installing voices; typed answers remain available. |
 | Microphone permission stalls | Allow this local address in Safari/Chrome/Edge and your OS microphone settings. Press Stop audio / cancel if a prompt stalls. Embedded browsers may lack microphone support. |
-| Recognition mistakes | Correct the text before confirming. Speak one answer at a time, reduce background noise, and verify the interview language. Recordings are limited to three minutes and 20 MB. |
+| Recognition mistakes | Correct the text before confirming. Speak one answer at a time, reduce background noise, and verify the interview language. Each recording segment is limited to three minutes and 20 MB. **Extend recording** appends another segment to your edited answer; **Record answer** replaces it only after successful transcription. A countdown shows the current segment’s remaining time. The confirmed answer is limited to 6,000 characters; an over-limit draft stays visible for editing. The report’s raw-recognition field records the last segment at initial submission, separately from the combined corrected answer. Later answer edits preserve that original recognition record. |
 | Cloud key rejected / quota exhausted | Reconnect the selected provider, check API permissions and billing, and refresh models. Keys from a chat subscription may not provide API access. |
 | Unknown model cannot be saved | Run its synthetic schema test. A listed model may not support structured text or your selected reasoning effort. Use provider defaults if unsure. |
 | OS vault unavailable | Use a session-only key. Unlock/configure the native credential vault; plaintext key-storage backends are rejected. |
@@ -386,11 +387,11 @@ This is a controlled workflow with separate specialist model tasks. Ordinary Pyt
 | Preparation failed | Retry after checking the model connection/context, or choose native fixed questions. No greeting or scoring question appears before preparation is ready. |
 | Provider quota or rate limit | Wait for the displayed delay and check the account. Resume missing report tasks; completed scores remain saved. |
 | Ollama model blocked | Run `ollama signin` when using cloud models through your local daemon. Refresh models, choose **Provider default** reasoning, and run **Test model**. Follow the progress counter; Stop model test cancels it. |
-| Selected AI unavailable or quota exhausted | Switch to a local model or another provider. During question preparation, cancel the interview to unlock setup, then start again. If report generation failed, stop any remaining report work, change the saved model plan, and choose **New assessment with current models**. Saved answers remain available. HTTP 503 means the provider was temporarily unavailable; it is different from HTTP 429 (rate or quota limit). |
+| Selected AI unavailable or quota exhausted | Switch to a local model or another provider. During question preparation, cancel the interview to unlock setup, then start again. If report generation failed, stop any remaining report work, change the saved model plan, and use the `report-revision` terminal command below. Saved answers remain available. HTTP 503 means the provider was temporarily unavailable; it is different from HTTP 429 (rate or quota limit). |
 | Ctrl+C previously left work running | Use the updated launcher. It allows five seconds for active HTTP requests, then cancels unfinished work and reaps its native child processes. Stop a separately launched local model server in its own terminal too. |
 | Old interview after reload | Startup now opens a clean connection screen. Choose Resume under Saved interviews. Cancelled runs are history only. |
 | Report slow or interrupted | Intel CPU scoring can take many minutes. Check saved progress and resume unfinished report work. Validated scores are not recalculated. A timeout may still be billed. |
-| Model-call budget reached | Review the saved partial report, then explicitly allow twelve more attempts. A new assessment with changed models creates another version using the same locked answers. |
+| Model-call budget reached | Review the saved partial report, then use `report-allowance RUN_ID --confirm` with the simulator stopped. A new assessment with changed models creates another version using the same locked answers. |
 | HTTP 403 after restarting | Reload the page at `127.0.0.1`. The local request token changes when the server restarts. |
 | Second interface will not start | Stop the other server with Ctrl+C. An exclusive lease prevents simultaneous writers. |
 | Restore refuses to overwrite state | Restore into an empty copy with matching wiki/job preparation. Preserve the original backup. |
@@ -402,3 +403,34 @@ Development checks use `uv sync --locked --group dev`, then `uv run pytest -q`, 
 Stop both simulator interfaces first, then run `uv run interview-simulator clear-history --confirm`. This permanently removes interview sessions, answers, reports, question-bank learning, translation caches, and history database backups in this installation. Your PersonalWiki, registered job packages, models, and provider settings are kept. Use this only when you want an empty practice history.
 
 The [provider and shutdown audit](doc/PROVIDER_AND_SHUTDOWN_FIXES.md) records the October 2 fixes and validation.
+
+### Updated workspace and report completion
+
+The six pages are **Get started → Select Model → Select Job Interview → Start Interview → Review your answers → Interview report**. Provider connection controls and one main model selector are together on Select Model. Local model guidance explains how to set the following values in this installation's `.env` file (do not overwrite unrelated settings):
+
+```dotenv
+INTERVIEW_SIMULATOR_GGUF=models/primary/Qwen3.5-9B-Q4_K_M.gguf
+INTERVIEW_SIMULATOR_WHISPER_MODEL=models/whisper/ggml-small.bin
+INTERVIEW_SIMULATOR_TTS_BACKEND=auto
+```
+
+Then run `uv run interview-simulator local-server` in a separate terminal in the project folder. Setting these values in `.env` works across supported platforms and avoids shell-specific assignment errors. Choose your cloud provider instead if all selected text tasks will use cloud AI.
+
+**Saved interviews now live on Interview report.** Cancelled interviews are hidden there but remain stored for administrative access. Open a saved report or explicitly resume an unfinished interview; the app never automatically resumes one after reload. Cancel or finish an active interview before opening another saved interview.
+
+Every newly finalized report requires **ten validated, personalized examples**, including examples for skipped questions (which still score zero). The report shows separate counts for scores and examples. An incomplete report is labelled **Draft**, including its exported content. Resume unfinished report continues only missing work; completed scores remain unchanged. Generic placeholders do not count as examples. The coach separates candidate facts, company/job evidence, proposed approaches, suggested motivations, interviewer questions, and connecting wording. Unsupported achievements remain prohibited. Existing test reports are not automatically regenerated.
+
+The Ollama qualification contract has changed. Previously qualified models need the updated nine-task check, which now includes natural motivation wording in English, Japanese, and Traditional Chinese. This is a compatibility check, not a guarantee of coaching quality.
+
+### Advanced report recovery in a terminal
+
+Stop simulator servers before running either command. Use the run ID shown by ADK `jobs` or the saved simulation folder name:
+
+```sh
+uv run interview-simulator report-allowance RUN_ID --confirm
+uv run interview-simulator report-revision RUN_ID --confirm
+# If the saved model configuration uses cloud text:
+uv run interview-simulator report-revision RUN_ID --confirm --allow-cloud-text
+```
+
+The first command adds twelve permitted task attempts; it does not increase provider quota. The second creates a separate assessment using current saved model settings. Neither automatically generates a report. Restart the simulator, open the saved interview on Interview report, and explicitly resume report generation. Cloud credentials are loaded from the operating-system vault or a hidden prompt; keys must not be placed in command arguments. The existing ADK chat commands remain available.

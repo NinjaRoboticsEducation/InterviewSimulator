@@ -295,3 +295,52 @@ def verify_run(settings: Settings, run_id: str) -> dict[str, object]:
         if _hash(file.read_bytes()) != digest:
             raise ValueError(f"Simulation artifact checksum mismatch: {name}")
     return {"run_id": run_id, "status": manifest["status"], "verified_files": len(manifest["files"])}
+
+
+def recover_report(settings: Settings, run_id: str, *, revise: bool, cloud_consent: bool) -> dict:
+    """Explicit terminal recovery under the same installation lease as both servers."""
+    from getpass import getpass
+    from uuid import uuid4
+
+    from .engine import InterviewEngine
+    from .providers import ProviderError
+
+    with _lease(settings):
+        engine = InterviewEngine(settings)
+        saved = engine.store.get_run(run_id)
+        service = engine.providers
+        try:
+            if not revise:
+                engine.store.grant_recovery(run_id, uuid4().hex, saved["revision"])
+            else:
+                if service.plan.cloud_providers and not cloud_consent:
+                    raise ValueError("Review saved model settings and add --allow-cloud-text for cloud text")
+                credentials = set(service.plan.cloud_providers) - {"ollama"}
+                for binding in (
+                    service.plan.questions,
+                    service.plan.evaluation,
+                    service.plan.coaching,
+                    service.plan.summary,
+                    service.plan.localization or service.plan.questions,
+                ):
+                    if binding.provider == "ollama":
+                        credential = service.ollama.profile(binding.connection)["credential"]
+                        if credential:
+                            credentials.add(credential)
+                for name in sorted(credentials):
+                    try:
+                        service.credentials.get(name)
+                    except ProviderError:
+                        service.credentials.set(
+                            name, getpass("Provider key for saved configuration (hidden): ")
+                        )
+                asyncio.run(
+                    engine.revise_report(run_id, service.plan, saved["revision"], uuid4().hex, cloud_consent)
+                )
+            return {
+                "run_id": run_id,
+                "action": "new_assessment" if revise else "twelve_more_attempts",
+                "next": "Restart the simulator and explicitly resume report generation. No report requests were dispatched.",
+            }
+        finally:
+            service.credentials.clear_memory()

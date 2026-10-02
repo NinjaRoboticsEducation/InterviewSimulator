@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .coaching import example_count, has_example
+
 LABELS = {
     "en": (
         "Interview evaluation",
@@ -71,7 +73,7 @@ DETAILS: dict[str, dict[str, Any]] = {
         "category": "Category",
         "confirmed": "Confirmed answer",
         "skipped": "[intentionally skipped]",
-        "raw": "Original speech recognition",
+        "raw": "Recorded segment before corrections",
         "score": "Score",
         "reason": "Reason",
         "evidence": "Answer evidence",
@@ -104,7 +106,7 @@ DETAILS: dict[str, dict[str, Any]] = {
         "category": "分野",
         "confirmed": "確定した回答",
         "skipped": "［意図的に回答を省略］",
-        "raw": "音声認識の元の文",
+        "raw": "録音区間の修正前の認識文",
         "score": "スコア",
         "reason": "評価理由",
         "evidence": "回答中の根拠",
@@ -137,7 +139,7 @@ DETAILS: dict[str, dict[str, Any]] = {
         "category": "類別",
         "confirmed": "確認後的回答",
         "skipped": "［刻意略過此題］",
-        "raw": "原始語音辨識文字",
+        "raw": "錄音片段的原始辨識文字",
         "score": "分數",
         "reason": "評分原因",
         "evidence": "回答中的佐證",
@@ -174,6 +176,7 @@ def render_report(run: dict[str, Any]) -> str:
     title, score_label, good, improve, example, why, practice = LABELS[locale]
     score_note, overall, strongest, next_area, unavailable, missing, coaching_unavailable = NOTES[locale]
     detail = DETAILS[locale]
+    examples = example_count(run)
     answers = {int(a["ordinal"]): a for a in run["answers"]}
     evaluations = {int(k): v for k, v in run["evaluations"].items()}
     scored = [evaluations[i]["score"] for i in range(1, 11) if i in evaluations and "score" in evaluations[i]]
@@ -344,7 +347,7 @@ def render_report(run: dict[str, Any]) -> str:
         if raw_transcript and raw_transcript != answer["text"]:
             lines.extend([f"**{detail['raw']}:** {_safe(raw_transcript)}", ""])
         if evaluation is None or "score" not in evaluation:
-            lines.extend([unavailable, ""])
+            lines.extend([unavailable, "", f"**{example}:** {coaching_unavailable}", ""])
             continue
         lines.extend(
             [
@@ -385,7 +388,7 @@ def render_report(run: dict[str, Any]) -> str:
                 ]
             )
         coaching = evaluation.get("coaching")
-        if coaching:
+        if has_example(coaching):
             lines.extend(
                 [
                     f"**{example}:** {_safe(coaching['example'])}",
@@ -400,6 +403,14 @@ def render_report(run: dict[str, Any]) -> str:
                     "",
                 ]
             )
+            if coaching.get("source_ids"):
+                lines.extend(
+                    [
+                        f"**{detail['source_ids']}:** "
+                        + ", ".join("`" + _safe(item) + "`" for item in coaching["source_ids"]),
+                        "",
+                    ]
+                )
             if coaching.get("provenance"):
                 identity = coaching["provenance"]
                 name = identity.get(
@@ -411,8 +422,15 @@ def render_report(run: dict[str, Any]) -> str:
                         "",
                     ]
                 )
-        elif evaluation.get("coaching_error"):
-            lines.extend([coaching_unavailable, ""])
+        else:
+            lines.extend([f"**{example}:** {coaching_unavailable}", ""])
     if run.get("summary"):
         lines.extend(["", f"## {overall}", "", _safe(run["summary"])])
+    if examples < 10 or not complete or run.get("report_state") not in {None, "complete"}:
+        notice = {
+            "en": f"DRAFT — {len(scored)}/10 scored; {examples}/10 validated examples ready. Resume missing work before this report is final.",
+            "ja": f"下書き — 採点{len(scored)}/10、検証済み回答例{examples}/10。最終版には未完了の処理を再開してください。",
+            "zh-Hant": f"草稿 — 已評分{len(scored)}/10，已驗證回答範例{examples}/10。請繼續未完成項目後再產生最終報告。",
+        }[locale]
+        lines[2:2] = [notice, ""]
     return "\n".join(lines).rstrip() + "\n"

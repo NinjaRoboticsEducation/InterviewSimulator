@@ -9,6 +9,16 @@ class InputBudgetError(ProviderError):
 
 
 def safe_failure(error: BaseException) -> dict:
+    from .coaching import CoachingValidationError
+
+    if isinstance(error, CoachingValidationError):
+        return {
+            "code": "VALIDATION_FAILED",
+            "reason": error.code,
+            "clause": error.clause,
+            "message": "The example needs evidence or wording correction. Saved work is preserved.",
+            "dispatch_state": "received",
+        }
     if isinstance(error, TimeoutError):
         return ProviderError(
             "Task timed out. Saved results remain available; resume explicitly.",

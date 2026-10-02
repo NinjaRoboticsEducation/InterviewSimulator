@@ -18,6 +18,7 @@ from interviewwiki.util import parse_ref
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from .coaching import example_count
 from .config import Settings
 from .doctor import diagnostics
 from .engine import InterviewEngine
@@ -366,7 +367,12 @@ def history(opportunity: str, locale: str = "en"):
         parse_ref(opportunity)
         if locale not in {"en", "ja", "zh-Hant"}:
             raise ValueError("Unsupported language")
-        return engine.store.practice_profile(opportunity, locale)
+        profile = engine.store.practice_profile(opportunity, locale)
+        profile["runs"] = sum(
+            r["status"] != "cancelled" and r["opportunity"] == opportunity and r["locale"] == locale
+            for r in engine.store.list_runs()
+        )
+        return profile
     except (ValueError, InterviewWikiError) as exc:
         raise HTTPException(400, str(exc)) from exc
 
@@ -553,6 +559,7 @@ def report_status(run_id: str):
         "report_state": run.get("report_state", "idle"),
         "assessed": sum("score" in evaluation for evaluation in run["evaluations"].values()),
         "processed": len(run["evaluations"]),
+        "examples_ready": example_count(run),
         "failure": run.get("report_error"),
         "assessment_version": run.get("assessment_version", 0),
         **result,
@@ -589,13 +596,15 @@ def download_report(run_id: str, format: Literal["md", "html"] = "md"):
         if not path:
             raise ValueError("No saved report yet")
         text = read_report(path)
+        complete = statistics(engine.store.get_run(run_id))["complete"]
+        filename = "interview-report" if complete else "interview-report-draft"
         if format == "html":
             css = (Path(__file__).parent / "static/style.css").read_text(encoding="utf-8")
             text = standalone_html(text, engine.store.get_run(run_id), css)
         return Response(
             text,
             media_type="text/html" if format == "html" else "text/markdown",
-            headers={"Content-Disposition": f'attachment; filename="interview-report.{format}"'},
+            headers={"Content-Disposition": f'attachment; filename="{filename}.{format}"'},
         )
     except (ValueError, KeyError) as exc:
         raise HTTPException(404, str(exc)) from exc
@@ -605,7 +614,7 @@ def download_report(run_id: str, format: Literal["md", "html"] = "md"):
 async def transcribe(locale: str, audio: Annotated[UploadFile, File()]):
     try:
         data = await audio.read(20_000_001)
-        return {"text": await engine.run_native(speech.transcribe, data, locale)}
+        return await engine.run_native(speech.transcribe_segment, data, locale)
     except (
         ValueError,
         RuntimeError,

@@ -9,6 +9,7 @@ from typing import Any
 import nh3
 from markdown_it import MarkdownIt
 
+from .coaching import example_count
 from .evaluation import DIMENSIONS
 from .questions import CATEGORIES
 from .report import DETAILS, NOTES
@@ -83,7 +84,10 @@ def statistics(run: dict[str, Any]) -> dict:
     return {
         "overall": round(sum(e["score"] for e in valid.values()) / len(valid), 1) if valid else None,
         "assessed": len(valid),
-        "complete": len(valid) == 10,
+        "complete": len(valid) == 10
+        and example_count(run) == 10
+        and run.get("report_state", "complete") == "complete",
+        "examples_ready": example_count(run),
         "topics": topics,
         "dimensions": dimensions,
         "skipped": sum(bool(a["skipped"]) for a in run["answers"]),

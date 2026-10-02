@@ -15,6 +15,7 @@ from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events import Event
 from google.adk.events.event_actions import EventActions
 
+from interview_simulator.coaching import example_count
 from interview_simulator.config import Settings
 from interview_simulator.engine import InterviewEngine
 from interview_simulator.errors import safe_failure
@@ -195,18 +196,18 @@ async def reply(message: str, session_run_id: str | None = None) -> str:
         if task is None:
             report = practice.latest_report(run_id)
             return (
-                f"Report: {report}"
+                f"{'Final report' if saved['report_state'] == 'complete' else 'Draft report'}: {report}; {example_count(saved)}/10 examples ready"
                 if report
                 else f"{len(saved['answers'])}/10 answered; report has not started."
             )
         if not task.done():
             scored = sum("score" in item for item in saved["evaluations"].values())
-            return f"Report in progress: {len(saved['evaluations'])}/10 processed, {scored}/10 scored. Type `status` again shortly."
+            return f"Report in progress: {len(saved['evaluations'])}/10 processed, {scored}/10 scored, {example_count(saved)}/10 examples ready. Type `status` again shortly."
         if task.cancelled():
             return "Report was interrupted. Type `report` to resume saved work."
         if error := task.exception():
             return f"Report stopped: {safe_failure(error)['message']}. Type `report` to retry saved work."
-        return f"Report saved at {task.result()}. Open that Markdown file to review every answer."
+        return f"{'Final report' if saved['report_state'] == 'complete' else 'Draft report'} saved at {task.result()}; {example_count(saved)}/10 examples ready. Type `report` to resume missing work."
     if command.lower() == "report":
         saved = practice.store.get_run(run_id)
         if len(saved["answers"]) != 10:

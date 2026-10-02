@@ -12,7 +12,7 @@ from filelock import FileLock
 from .config import Settings
 from .doctor import diagnostics
 from .files import private_directory, reject_links
-from .portability import clear_history, delete_run, export_state, import_state, verify_run
+from .portability import clear_history, delete_run, export_state, import_state, recover_report, verify_run
 from .wiki import WikiAdapter
 
 
@@ -33,12 +33,18 @@ def main() -> None:
             "delete-run",
             "clear-history",
             "verify-run",
+            "report-allowance",
+            "report-revision",
         ],
     )
-    parser.add_argument("target", nargs="?", help="Archive path or run ID for backup, restore, or delete-run")
+    parser.add_argument(
+        "target", nargs="?", help="Archive path, audio file, or run ID for the selected command"
+    )
     parser.add_argument("--port", type=int)
     parser.add_argument(
-        "--confirm", action="store_true", help="Confirm removal of all saved interview history"
+        "--confirm",
+        action="store_true",
+        help="Confirm the selected history removal or report recovery operation",
     )
     parser.add_argument("--locale", choices=["en", "ja", "zh-Hant"], default="en")
     parser.add_argument(
@@ -53,7 +59,7 @@ def main() -> None:
     parser.add_argument(
         "--allow-cloud-text",
         action="store_true",
-        help="ADK Web: permit configured cloud text tasks; audio stays local",
+        help="Permit configured cloud text tasks for ADK Web or report revision; audio stays local",
     )
     args = parser.parse_args()
     settings = Settings.load()
@@ -120,6 +126,19 @@ def main() -> None:
     elif args.command == "jobs":
         for job in WikiAdapter(settings.wiki_root).list_opportunities():
             print(f"{job.reference}: {'ready' if job.ready else '; '.join(job.reasons)}")
+    elif args.command in {"report-allowance", "report-revision"}:
+        if not args.target or not args.confirm:
+            parser.error("Specify a run ID and --confirm; stop simulator servers first")
+        print(
+            json.dumps(
+                recover_report(
+                    settings,
+                    args.target,
+                    revise=args.command == "report-revision",
+                    cloud_consent=args.allow_cloud_text,
+                )
+            )
+        )
     elif args.command == "clear-history":
         if not args.confirm:
             parser.error(

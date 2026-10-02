@@ -217,7 +217,7 @@ def test_voice_answer_preserves_raw_and_confirmed_transcripts(tmp_path, snapshot
     saved = store.get_run(run_id)["answers"][0]
     assert saved["text"] == "I built a test service."
     assert saved["raw_transcript"] == "I billed a test service."
-    assert "Original speech recognition" in render_report(store.get_run(run_id))
+    assert "Recorded segment before corrections" in render_report(store.get_run(run_id))
 
 
 def test_sensitive_and_unreviewed_facts_never_shape_questions(snapshot):

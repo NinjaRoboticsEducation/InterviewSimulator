@@ -38,7 +38,7 @@
   }
   el('stop-model-test').onclick=async()=>{if(!modelTestId)return;try{await api(`/api/model-tests/${modelTestId}`,{method:'DELETE'});}catch(error){note('settings-status',error.message);}};
   window.addEventListener('pagehide',()=>{if(modelTestId)fetch(`/api/model-tests/${modelTestId}`,{method:'DELETE',headers:{'X-Interview-Token':token},keepalive:true}).catch(()=>{});});
-  function providerUI(){const provider=el('provider').value;el('cloud-key').hidden=provider==='local';el('local-help').hidden=provider!=='local';el('ollama-setup').hidden=provider!=='ollama';note('provider-status',provider==='local'?'Local speech and inference use this computer.':'Connect this provider to discover your account models.');}
+  function providerUI(){const provider=el('provider').value;el('cloud-key').hidden=provider==='local';el('probe-main').hidden=provider==='local';el('local-help').hidden=provider!=='local';el('ollama-setup').hidden=provider!=='ollama';note('provider-guide',provider==='local'?'Start the local server in a separate terminal, then refresh models, select the model, and save to continue.':provider==='ollama'?'Choose your Ollama connection, connect and load models, select a model, run Test model, then save to continue.':'Enter your provider API key and connect to load models. Select a model, test it if required, then save to continue.');note('provider-status',provider==='local'?'Local speech and inference use this computer.':'Connect this provider to discover your account models.');}
   function describePlan(){if(!plan)return;const bindings=[plan.evaluation,plan.coaching,plan.localization||plan.questions];if(plan.generate_questions)bindings.push(plan.questions);if(plan.generate_summary)bindings.push(plan.summary);
     const names=[...new Set(bindings.map(b=>b.provider+(b.provider==='ollama'?' ('+w(b.locality==='local'?'Own computer':'Official cloud')+')':'')))];
     const cloud=[...new Set(bindings.filter(b=>b.provider!=='local'&&!(b.provider==='ollama'&&b.locality==='local')).map(b=>b.provider))];
@@ -50,7 +50,7 @@
     note('model-note',models.length?'API charges depend on your provider and model. A timeout may still be billed. Unknown models require a successful synthetic schema check.':'No models were returned. Check your account access.');
     for(const task of Object.keys(taskNames)){
       if(el('advanced-models').open&&el(task+'-provider').value!==provider)continue;
-      el(task+'-provider').value=provider;el(task+'-connection').value=connection();el(task+'-connection').hidden=provider!=='ollama';options(el(task+'-model'),models,plan?.[task]?.provider===provider?plan[task].model:el('main-model').value);
+      el(task+'-provider').value=provider;const check=document.querySelector('[data-task="'+task+'"]');if(check)check.hidden=provider==='local';el(task+'-connection').value=connection();el(task+'-connection').hidden=provider!=='ollama';options(el(task+'-model'),models,plan?.[task]?.provider===provider?plan[task].model:el('main-model').value);
     }
   }
   function makeTasks(){for(const [task,title] of Object.entries(taskNames)){
@@ -63,13 +63,13 @@
     const tokens=document.createElement('input');tokens.id=task+'-tokens';tokens.type='number';tokens.min='256';tokens.max='8192';tokens.value=task==='questions'?'4096':task==='evaluation'?'1024':'2048';row.append(tokens);
     const reasonLabel=document.createElement('label');reasonLabel.htmlFor=task+'-reasoning';reasonLabel.textContent='Reasoning effort (if supported)';row.append(reasonLabel);
     const reasoning=document.createElement('select');reasoning.id=task+'-reasoning';for(const name of ['','low','medium','high']){const option=document.createElement('option');option.value=name;option.textContent=name||'Provider default';reasoning.append(option);}row.append(reasoning);
-    const check=document.createElement('button');check.className='secondary';check.textContent='Test this model (may incur charges)';check.onclick=()=>guard(async()=>testModel(await binding(task)));row.append(check);el('task-models').append(row);
-    provider.onchange=()=>guard(async()=>{reasoning.value='';profile.hidden=provider.value!=='ollama';profileOptions(profile,connection());options(model,await loadModels(provider.value,profile.value),null);});
+    const check=document.createElement('button');check.dataset.task=task;check.className='secondary';check.textContent='Test this model (may incur charges)';check.onclick=()=>guard(async()=>testModel(await binding(task)));row.append(check);el('task-models').append(row);
+    provider.onchange=()=>guard(async()=>{check.hidden=provider.value==='local';reasoning.value='';profile.hidden=provider.value!=='ollama';profileOptions(profile,connection());options(model,await loadModels(provider.value,profile.value),null);});
     profile.onchange=()=>guard(async()=>{reasoning.value='';options(model,await loadModels(provider.value,profile.value),null);});
     model.onchange=()=>{reasoning.value='';};
   }}
   makeTasks();window.registerWorkspaceLanguage?.(el('task-models'));window.applyWorkspaceLanguage?.();
-  el('provider').onchange=()=>{if(workspaceLocked())return;for(const task of Object.keys(taskNames))el(task+'-reasoning').value='';providerUI();};
+  el('provider').onchange=()=>{if(workspaceLocked())return;for(const task of Object.keys(taskNames))el(task+'-reasoning').value='';options(el('main-model'),[],null);providerUI();if(el('provider').value==='local')guard(mainModels);};
   el('ollama-mode').onchange=()=>{const cloud=el('ollama-mode').value==='cloud';el('ollama-endpoint').value=cloud?'https://ollama.com':'http://127.0.0.1:11434';el('ollama-endpoint').readOnly=cloud;el('ollama-context').disabled=cloud;};
   el('ollama-connection').onchange=()=>guard(mainModels);
   el('connect').onclick=()=>guard(async()=>{const key=el('api-key').value;note('provider-status','Checking key and discovering models…');
@@ -83,7 +83,7 @@
   });
   el('reconnect-saved').onclick=()=>guard(async()=>{const provider=el('provider').value,path=provider==='ollama'?`/api/ollama/${connection()}/reconnect`:`/api/providers/${provider}/reconnect`;const key=el('api-key').value;
     try{await api(path,{method:'POST',...(provider==='ollama'&&key?{headers:{'Content-Type':'application/json'},body:JSON.stringify({key,remember:el('remember-key').checked})}:{})});await mainModels();note('provider-status','Saved key reconnected.');goScreen('models-screen');}finally{el('api-key').value='';}});
-  el('connection-next').onclick=()=>guard(async()=>{await mainModels();goScreen('models-screen');});
+  el('connection-next').onclick=()=>goScreen('models-screen');
   el('refresh-models').onclick=()=>guard(mainModels);
   el('main-model').onchange=()=>{for(const task of Object.keys(taskNames))if(el(task+'-provider').value===el('provider').value){el(task+'-model').value=el('main-model').value;el(task+'-reasoning').value='';}};
   el('probe-main').onclick=()=>guard(async()=>{note('settings-status','Running a synthetic check. No candidate data is sent.');await testModel(await binding('evaluation',true));});
@@ -91,13 +91,15 @@
   el('save-models').onclick=()=>guard(async()=>{const next={...plan},main=!el('advanced-models').open;for(const task of Object.keys(taskNames))next[task]=await binding(task,main);
     next.generate_questions=el('generate-questions').checked;next.generate_summary=el('generate-summary').checked;next.max_calls=Number(el('call-budget').value);
     const result=await api('/api/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(next)});plan=result.plan;el('cloud-consent').checked=false;describePlan();goScreen('job-screen');});
-  window.refreshSetupLanguage=describePlan;
+  function budgetNote(){const minimum=30+Number(el('generate-questions').checked)+Number(el('generate-summary').checked);note('budget-note','Plan for at least {n} task attempts for scoring and ten reviewed examples; translation and repairs need additional attempts.',{n:minimum});}
+  for(const id of ['generate-questions','generate-summary','call-budget'])el(id).addEventListener('change',budgetNote);
+  window.refreshSetupLanguage=()=>{providerUI();describePlan();budgetNote();};
   async function initializeSettings(){
     const settings=await api('/api/settings');plan=settings.plan;connections=settings.ollama_connections||[];window.workspaceId=settings.workspace_id;
     const preference=localStorage.getItem('interview-ui:'+settings.workspace_id);if(['en','ja','zh-Hant'].includes(preference))el('ui-locale').value=preference;translateUI();
     profileOptions(el('ollama-connection'),plan.evaluation.connection);el('provider').value=plan.evaluation.provider;providerUI();describePlan();el('generate-questions').checked=plan.generate_questions;el('generate-summary').checked=plan.generate_summary;el('call-budget').value=plan.max_calls;
-    for(const task of Object.keys(taskNames)){const saved=plan[task]||plan.questions;el(task+'-provider').value=saved.provider;el(task+'-tokens').value=saved.max_output_tokens;el(task+'-reasoning').value=saved.reasoning||'';profileOptions(el(task+'-connection'),saved.connection);el(task+'-connection').hidden=saved.provider!=='ollama';try{options(el(task+'-model'),await loadModels(saved.provider,saved.connection),saved.model);}catch(e){note('provider-status',e.message);}}
-    try{options(el('main-model'),await loadModels(plan.evaluation.provider,plan.evaluation.connection),plan.evaluation.model);}catch(e){note('provider-status',e.message);}
+    for(const task of Object.keys(taskNames)){const saved=plan[task]||plan.questions;el(task+'-provider').value=saved.provider;const check=document.querySelector('[data-task="'+task+'"]');if(check)check.hidden=saved.provider==='local';el(task+'-tokens').value=saved.max_output_tokens;el(task+'-reasoning').value=saved.reasoning||'';profileOptions(el(task+'-connection'),saved.connection);el(task+'-connection').hidden=saved.provider!=='ollama';options(el(task+'-model'),[{id:saved.model,name:saved.model,compatible:true}],saved.model);}
+    options(el('main-model'),[{id:plan.evaluation.model,name:plan.evaluation.model,compatible:true}],plan.evaluation.model);budgetNote();
   }
   initializeSettings().catch(e=>note('provider-status',e.message));
 })();

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import Any
+
+from .coaching import CoachingValidationError
 
 DIMENSIONS = ("relevance", "specificity", "reasoning", "clarity", "reflection")
 WEIGHTS = {
@@ -93,11 +94,13 @@ def parse_json_object(text: str) -> dict[str, Any]:
 def validate_coaching(
     raw: dict[str, Any], known_facts: dict[str, str], question: dict[str, Any]
 ) -> dict[str, Any]:
+    sources = question.get("company_evidence", {})
+    all_evidence = {**known_facts, **sources}
     ids = raw.get("fact_ids")
     if (
         not isinstance(ids, list)
         or not all(isinstance(v, str) for v in ids)
-        or not set(ids) <= known_facts.keys()
+        or not set(ids) <= all_evidence.keys()
     ):
         raise ValueError("Coaching cites unknown candidate facts")
     for key in ("why_it_works", "outline", "next_action"):
@@ -133,7 +136,7 @@ def validate_coaching(
         if not isinstance(clauses, list) or not 1 <= len(clauses) <= 5:
             raise ValueError("A finished example needs one to five supported clauses")
         texts = []
-        for clause in clauses:
+        for index, clause in enumerate(clauses):
             if not isinstance(clause, dict) or set(clause) != {"text", "kind", "fact_ids"}:
                 raise ValueError("Invalid example clause")
             references = clause["fact_ids"]
@@ -143,30 +146,29 @@ def validate_coaching(
                 raise ValueError("Example clause cites unknown evidence")
             text = validate_text(clause["text"], question["locale"])
             if clause["kind"] == "fact":
-                if not references:
-                    raise ValueError("Career claims require profile evidence")
+                if not references or not set(references) <= known_facts.keys():
+                    raise CoachingValidationError("CANDIDATE_CITATION_REQUIRED", index)
                 source = " ".join(known_facts[i] for i in references)
                 numbers = numeric_values(text)
                 if not numbers <= numeric_values(source):
                     raise ValueError("Example introduced an unsupported metric or date")
-            elif clause["kind"] == "prospective":
-                markers = {
-                    "en": r"\b(would|could|will|if|plan|intend)\b",
-                    "ja": r"たい|場合|なら|考え|つもり|まず|予定|今後|将来",
-                    "zh-Hant": r"會|如果|計畫|希望|首先|將|打算|未來",
-                }
-                if (
-                    references
-                    or not re.search(markers[question["locale"]], text, re.IGNORECASE)
-                    or numeric_values(text)
-                ):
-                    raise ValueError("Future advice must be conditional and contain no invented metrics")
+            elif clause["kind"] == "company":
+                if not references or not set(references) <= sources.keys():
+                    raise CoachingValidationError("COMPANY_CITATION_REQUIRED", index)
+                if not numeric_values(text) <= numeric_values(" ".join(sources[i] for i in references)):
+                    raise CoachingValidationError("UNSUPPORTED_COMPANY_NUMBER", index)
+            elif clause["kind"] in {"prospective", "motivation", "question", "bridge"}:
+                # Intent and natural linking phrases cannot be validated by a keyword list.
+                # The ADK semantic audit checks tense, assumptions, ownership and planned numbers.
+                if clause["kind"] != "prospective" and numeric_values(text):
+                    raise CoachingValidationError("UNSUPPORTED_NONFACT_NUMBER", index)
             else:
                 raise ValueError("Unknown example clause kind")
             texts.append(text)
         example = " ".join(texts)
     return {
-        "fact_ids": ids,
+        "fact_ids": [fid for fid in ids if fid in known_facts],
+        "source_ids": [fid for fid in ids if fid in sources],
         "example": example,
         "why_it_works": raw["why_it_works"],
         "outline": raw["outline"],
