@@ -22,7 +22,7 @@ The setup profiles choose which downloads and tools are necessary. Native binari
 
 ## macOS
 
-Before Python setup on Intel Mac, install Apple’s command-line tools and run `brew install openssl@3 rust pkgconf`. The locked cryptography dependency builds from source on this device, independently of the local voice profile. [Official build instructions](https://cryptography.io/en/latest/installation/#building-cryptography-on-macos).
+Before Python setup on Intel Mac, follow the [Intel Mac setup guide](INTEL_MAC_SETUP.md). The locked cryptography dependency needs a source build on a fresh Intel installation, independently of the voice profile. Reuse working build tools; if Rust is missing, prefer the official rustup binary installer to avoid Homebrew’s large Rust/LLVM source-build chain. Set `OPENSSL_DIR` in the setup terminal as described in that guide.
 
 1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and [Homebrew](https://brew.sh/) using their official instructions. For source builds, install Apple's command-line development tools with `xcode-select --install`.
 2. In the project folder, run:
