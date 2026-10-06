@@ -12,7 +12,7 @@ from test_refinement import answered, settings
 from interview_simulator.context_budget import answer_spans, compact_facts
 from interview_simulator.errors import InputBudgetError
 from interview_simulator.evaluation import validate_coaching
-from interview_simulator.localization import Localizer, validate_text
+from interview_simulator.localization import VERSION, Localizer, validate_text
 from interview_simulator.providers import Binding, ModelPlan, ProviderError, ProviderService
 from interview_simulator.providers.ollama import ConnectionRequest, normalize_endpoint
 from interview_simulator.questions import make_fixed_questions
@@ -86,10 +86,7 @@ def test_translation_cache_is_private_and_model_scoped(tmp_path):
 
         snapshot = FakeWiki(tmp_path).snapshot("example/engineer")
         # One translation, remaining questions already frozen/validated.
-        questions = [
-            replace(q, localization_version="question-localization-v1")
-            for q in make_fixed_questions(snapshot, "ja")
-        ]
+        questions = [replace(q, localization_version=VERSION) for q in make_fixed_questions(snapshot, "ja")]
         questions[0] = replace(questions[0], text="Please introduce yourself.", localization_version=None)
         localizer = Localizer(tmp_path, Model(), invoke)
         result = await localizer.questions(snapshot, questions)

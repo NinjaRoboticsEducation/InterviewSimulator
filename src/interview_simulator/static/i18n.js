@@ -16,3 +16,5 @@ window.applyWorkspaceLanguage=function(){
   for(const [node,key] of workspaceNodes){if(node.isConnected)node.textContent=window.workspaceText(key);}
 };
 window.registerWorkspaceLanguage();
+
+Object.assign(workspaceTranslations,{"A question translation needs correction. Retry preparation or use native fixed questions. Saved work is preserved.":{"ja":"質問の翻訳を修正する必要があります。準備を再試行するか、標準の質問を使用してください。保存済みの内容は保持されています。","zh-Hant":"有一道問題的翻譯需要修正。請重新準備或使用標準題目。已儲存的內容會保留。"}});

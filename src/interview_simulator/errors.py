@@ -10,6 +10,17 @@ class InputBudgetError(ProviderError):
 
 def safe_failure(error: BaseException) -> dict:
     from .coaching import CoachingValidationError
+    from .localization import LocalizationValidationError
+
+    if isinstance(error, LocalizationValidationError):
+        return {
+            "code": "VALIDATION_FAILED",
+            "stage": "localization",
+            "reason": error.reason,
+            "ordinal": error.ordinal,
+            "message": "A question translation needs correction. Retry preparation or use native fixed questions. Saved work is preserved.",
+            "dispatch_state": "received",
+        }
 
     if isinstance(error, CoachingValidationError):
         return {

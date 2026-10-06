@@ -290,6 +290,7 @@ wire('download-md',()=>downloadReport('md'));wire('download-html',()=>downloadRe
 
 function failureText(failure){
   if(!failure)return '';
+  if(failure.stage==='localization')return w('A question translation needs correction. Retry preparation or use native fixed questions. Saved work is preserved.')+(Number.isInteger(failure.ordinal)?' '+w('Question {n} of 10',{n:failure.ordinal}):'');
   if(failure.code==='CALL_BUDGET')return w('The task allowance is exhausted. Stop the simulator and use the documented report-allowance terminal command, then resume this draft.');
   if(failure.recovery==='switch_provider'||['RATE_LIMITED','TEMPORARY_UNAVAILABLE','PROVIDER_UNAVAILABLE','TIMEOUT','AUTHENTICATION_FAILED','PROVIDER_REFUSAL'].includes(failure.code))return w(providerAdvice);
   const message=w(failure.code),wait=Math.max(0,Math.ceil((failure.retry_at?failure.retry_at-Date.now()/1000:failure.retry_after_seconds)||0));
